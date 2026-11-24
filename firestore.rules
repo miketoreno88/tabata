@@ -11,20 +11,6 @@ service cloud.firestore {
         && d.list is list && d.list.size() >= 1 && d.list.size() <= 99
         && d.updatedAt == request.time;
     }
-    // Текущие круги (синхронизация между устройствами)
-    function validCurrent(d) {
-      return d.keys().hasOnly(['prepare', 'cool', 'list', 'active', 'updatedAt'])
-        && d.keys().hasAll(['prepare', 'cool', 'list', 'active', 'updatedAt'])
-        && d.prepare is int && d.prepare >= 0 && d.prepare <= 600
-        && d.cool is int && d.cool >= 0 && d.cool <= 3600
-        && d.list is list && d.list.size() >= 1 && d.list.size() <= 99
-        && (d.active == null || (d.active is string && d.active.size() <= 40))
-        && d.updatedAt == request.time;
-    }
-    match /users/{uid}/state/{docId} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow create, update: if request.auth != null && request.auth.uid == uid && docId == 'current' && validCurrent(request.resource.data);
-    }
     // Каждый видит и меняет только свои тренировки
     match /users/{uid}/workouts/{wid} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
