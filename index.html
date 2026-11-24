@@ -73,6 +73,16 @@ body.live .app { max-width: none; height: 100%; }
 .top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
 .top h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
 .top p { margin: 0; color: var(--muted); font-size: 16px; font-variant-numeric: tabular-nums; }
+.top-side { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.lang {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  font: 500 13px var(--text); color: var(--fg); background-color: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 28px 6px 12px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%; background-size: 5px 5px; background-repeat: no-repeat;
+}
+.lang:hover { border-color: var(--muted); }
+.lang:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 .main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; align-content: start; }
 body.live .main { grid-template-columns: minmax(0, 1fr); align-items: stretch; align-content: stretch; }
@@ -193,8 +203,8 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   padding-block: 10px 6px; border-top: 1px solid var(--line);
   font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
 }
-.list-head span { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.list-head span:first-child { justify-content: flex-start; padding-left: 4px; }
+.list-head > span { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; }
+.list-head > span:first-child { justify-content: flex-start; padding-left: 4px; }
 .list { display: flex; flex-direction: column; }
 .crow { padding-block: 3px; border-top: 1px solid var(--line); background: var(--surface); }
 .crow.dragging {
@@ -251,18 +261,21 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 <body>
 <div class="app">
   <header class="top">
-    <h1>Табата</h1>
-    <p id="total">15:10 · 8 кругов</p>
+    <h1 data-i="appName">Табата</h1>
+    <div class="top-side">
+      <p id="total">15:10 · 8 кругов</p>
+      <select class="lang" id="langSel" data-i-aria="language" aria-label="Язык"></select>
+    </div>
   </header>
 
   <main class="main">
-    <section class="stage" id="stage" data-phase="idle" aria-label="Таймер">
+    <section class="stage" id="stage" data-phase="idle" data-i-aria="timer" aria-label="Таймер">
       <div class="stage-top">
         <span class="phase" id="phase">Тренировка</span>
         <div class="tools">
           <button class="tool" id="soundBtn" type="button" aria-pressed="true">Звук: громко</button>
           <button class="tool" id="fsBtn" type="button">Весь экран</button>
-          <button class="tool" id="installBtn" type="button" hidden>Установить</button>
+          <button class="tool" id="installBtn" type="button" data-i="install" hidden>Установить</button>
         </div>
       </div>
       <div class="clock-wrap"><div class="clock" id="clock" role="timer">15:10</div></div>
@@ -274,30 +287,30 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       <div class="timeline" id="timeline" aria-hidden="true"></div>
       <div class="controls">
         <button class="btn primary" id="startBtn" type="button">Старт</button>
-        <button class="btn" id="skipBtn" type="button" disabled>Пропустить</button>
-        <button class="btn" id="stopBtn" type="button" disabled>Сброс</button>
+        <button class="btn" id="skipBtn" type="button" data-i="skip" disabled>Пропустить</button>
+        <button class="btn" id="stopBtn" type="button" data-i="reset" disabled>Сброс</button>
       </div>
-      <p class="hint">Пробел: старт и пауза</p>
+      <p class="hint" data-i="spaceHint">Пробел: старт и пауза</p>
     </section>
 
     <aside class="panel" id="panel">
-      <h2>Готовые</h2>
+      <h2 data-i="presets">Готовые</h2>
       <div class="presets" id="presets"></div>
-      <h2>Круги</h2>
+      <h2 data-i="rounds">Круги</h2>
       <div class="plan">
         <div id="fPrep"></div>
         <div class="list-head" aria-hidden="true">
-          <span>№</span>
-          <span><i class="chip" style="--k: var(--work)"></i>Работа</span>
-          <span><i class="chip" style="--k: var(--rest)"></i>Отдых</span>
+          <span data-i="colNo">№</span>
+          <span><i class="chip" style="--k: var(--work)"></i><span data-i="colWork">Работа</span></span>
+          <span><i class="chip" style="--k: var(--rest)"></i><span data-i="colRest">Отдых</span></span>
           <span></span>
         </div>
         <div class="list" id="list"></div>
-        <button class="add" id="addBtn" type="button">+ Добавить круг</button>
-        <p class="list-hint">Круг можно перетащить за номер выше или ниже.</p>
+        <button class="add" id="addBtn" type="button" data-i="add">+ Добавить круг</button>
+        <p class="list-hint" data-i="dragHint">Круг можно перетащить за номер выше или ниже.</p>
         <div id="fCool"></div>
       </div>
-      <p class="install-hint" id="iosHint" hidden>Чтобы таймер был на экране Домой как приложение: в Safari нажмите Поделиться, затем "На экран Домой".</p>
+      <p class="install-hint" id="iosHint" data-i="iosHint" hidden>Чтобы таймер был на экране Домой как приложение: в Safari нажмите Поделиться, затем "На экран Домой".</p>
     </aside>
   </main>
 </div>
@@ -305,37 +318,276 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 <script>
 (function () {
   const $ = (s) => document.querySelector(s);
+
+  /* Языки интерфейса; чего нет в словаре языка, берётся из английского */
+  const LANGS = [
+    ['ru', 'Русский'], ['en', 'English'], ['es', 'Español'], ['de', 'Deutsch'], ['fr', 'Français'],
+    ['pt', 'Português'], ['it', 'Italiano'], ['tr', 'Türkçe'], ['zh', '中文'], ['ja', '日本語'],
+  ];
+  const I18N = {
+    en: {
+      title: 'Tabata Timer', appName: 'Tabata', timer: 'Timer', language: 'Language',
+      workout: 'Workout', done: 'Done', paused: 'Paused',
+      ph_prep: 'Get ready', ph_work: 'Work', ph_rest: 'Rest', ph_cool: 'Cool-down',
+      phl_prep: 'get ready', phl_work: 'work', phl_rest: 'rest', phl_cool: 'cool-down',
+      start: 'Start', pause: 'Pause', resume: 'Resume', again: 'Again', skip: 'Skip', reset: 'Reset',
+      spaceHint: 'Space: start and pause',
+      soundLoud: 'Sound: loud', soundQuiet: 'Sound: quiet', soundOff: 'Sound: off',
+      fullscreen: 'Full screen', exitFullscreen: 'Exit full screen', install: 'Install',
+      presets: 'Presets', rounds: 'Rounds', colNo: '#', colWork: 'Work', colRest: 'Rest',
+      add: '+ Add round', dragHint: 'Drag a round by its number to move it up or down.',
+      iosHint: 'To keep the timer on your Home Screen as an app: in Safari tap Share, then "Add to Home Screen".',
+      prepare: 'Get ready', cool: 'Cool-down', finish: 'finish', coolCell: 'cool-down', less: 'less', more: 'more',
+      workRound: 'Work, round {n}', restRound: 'Rest, round {n}', moveRound: 'Round {n}, reorder with up and down arrows',
+      dragTitle: 'Drag up or down', deleteRound: 'Delete round {n}',
+      roundWord: { one: 'round', other: 'rounds' }, nRounds: '{n} {w}', total: '{t} · {rounds}',
+      summary: 'Work {w} · rest {r}', summaryNoRest: 'Work {w}', range: '{a} to {b}',
+      roundsDone: '{rounds} done', roundOf: 'Round {i} of {n}', ahead: '{rounds} ahead', allDone: 'All rounds done',
+      next: 'Next: {phase} {time}', nextFinish: 'Next: finish', left: '{t} left',
+      presetDefaultSub: '× 8, default', presetTabata: 'Tabata', presetTabata3: 'Tabata × 3', presetTabata3Sub: '3 × 8, 1:00 between',
+    },
+    ru: {
+      title: 'Табата таймер', appName: 'Табата', timer: 'Таймер', language: 'Язык',
+      workout: 'Тренировка', done: 'Готово', paused: 'Пауза',
+      ph_prep: 'Подготовка', ph_work: 'Работа', ph_rest: 'Отдых', ph_cool: 'Заминка',
+      phl_prep: 'подготовка', phl_work: 'работа', phl_rest: 'отдых', phl_cool: 'заминка',
+      start: 'Старт', pause: 'Пауза', resume: 'Продолжить', again: 'Ещё раз', skip: 'Пропустить', reset: 'Сброс',
+      spaceHint: 'Пробел: старт и пауза',
+      soundLoud: 'Звук: громко', soundQuiet: 'Звук: тише', soundOff: 'Звук: выкл',
+      fullscreen: 'Весь экран', exitFullscreen: 'Свернуть', install: 'Установить',
+      presets: 'Готовые', rounds: 'Круги', colNo: '№', colWork: 'Работа', colRest: 'Отдых',
+      add: '+ Добавить круг', dragHint: 'Круг можно перетащить за номер выше или ниже.',
+      iosHint: 'Чтобы таймер был на экране Домой как приложение: в Safari нажмите Поделиться, затем "На экран Домой".',
+      prepare: 'Подготовка', cool: 'Заминка', finish: 'финиш', coolCell: 'заминка', less: 'меньше', more: 'больше',
+      workRound: 'Работа, круг {n}', restRound: 'Отдых, круг {n}', moveRound: 'Круг {n}, переставить: стрелки вверх и вниз',
+      dragTitle: 'Перетащите выше или ниже', deleteRound: 'Удалить круг {n}',
+      roundWord: { one: 'круг', few: 'круга', many: 'кругов', other: 'круга' },
+      summary: 'Работа {w} · отдых {r}', summaryNoRest: 'Работа {w}', range: 'от {a} до {b}',
+      roundsDone: '{rounds} позади', roundOf: 'Круг {i} из {n}', ahead: 'Впереди {rounds}', allDone: 'Все круги позади',
+      next: 'Дальше: {phase} {time}', nextFinish: 'Дальше: финиш', left: 'Осталось {t}',
+      presetDefaultSub: '× 8, по умолчанию', presetTabata: 'Табата', presetTabata3: 'Табата × 3', presetTabata3Sub: '3 × 8, между ними 1:00',
+    },
+    es: {
+      title: 'Temporizador Tabata', timer: 'Temporizador', language: 'Idioma',
+      workout: 'Entrenamiento', done: 'Listo', paused: 'En pausa',
+      ph_prep: 'Preparación', ph_work: 'Trabajo', ph_rest: 'Descanso', ph_cool: 'Enfriamiento',
+      phl_prep: 'preparación', phl_work: 'trabajo', phl_rest: 'descanso', phl_cool: 'enfriamiento',
+      start: 'Iniciar', pause: 'Pausa', resume: 'Continuar', again: 'Otra vez', skip: 'Saltar', reset: 'Reiniciar',
+      spaceHint: 'Espacio: iniciar y pausar',
+      soundLoud: 'Sonido: alto', soundQuiet: 'Sonido: bajo', soundOff: 'Sonido: apagado',
+      fullscreen: 'Pantalla completa', exitFullscreen: 'Salir de pantalla completa', install: 'Instalar',
+      presets: 'Plantillas', rounds: 'Rondas', colNo: 'N.º', colWork: 'Trabajo', colRest: 'Descanso',
+      add: '+ Añadir ronda', dragHint: 'Arrastra una ronda por su número para moverla arriba o abajo.',
+      iosHint: 'Para tener el temporizador en la pantalla de inicio como app: en Safari toca Compartir y luego "Añadir a pantalla de inicio".',
+      prepare: 'Preparación', cool: 'Enfriamiento', finish: 'fin', coolCell: 'enfriamiento', less: 'menos', more: 'más',
+      workRound: 'Trabajo, ronda {n}', restRound: 'Descanso, ronda {n}', moveRound: 'Ronda {n}, reordenar con flechas arriba y abajo',
+      dragTitle: 'Arrastra arriba o abajo', deleteRound: 'Eliminar ronda {n}',
+      roundWord: { one: 'ronda', other: 'rondas' },
+      summary: 'Trabajo {w} · descanso {r}', summaryNoRest: 'Trabajo {w}', range: 'de {a} a {b}',
+      roundsDone: '{rounds} completadas', roundOf: 'Ronda {i} de {n}', ahead: 'Quedan {rounds}', allDone: 'Todas las rondas completadas',
+      next: 'Siguiente: {phase} {time}', nextFinish: 'Siguiente: fin', left: 'Quedan {t}',
+      presetDefaultSub: '× 8, por defecto', presetTabata3Sub: '3 × 8, 1:00 entre series',
+    },
+    de: {
+      title: 'Tabata-Timer', timer: 'Timer', language: 'Sprache',
+      workout: 'Training', done: 'Fertig', paused: 'Angehalten',
+      ph_prep: 'Vorbereitung', ph_work: 'Belastung', ph_rest: 'Erholung', ph_cool: 'Cool-down',
+      start: 'Start', pause: 'Pause', resume: 'Weiter', again: 'Nochmal', skip: 'Überspringen', reset: 'Zurücksetzen',
+      spaceHint: 'Leertaste: Start und Pause',
+      soundLoud: 'Ton: laut', soundQuiet: 'Ton: leise', soundOff: 'Ton: aus',
+      fullscreen: 'Vollbild', exitFullscreen: 'Vollbild beenden', install: 'Installieren',
+      presets: 'Vorlagen', rounds: 'Runden', colNo: 'Nr.', colWork: 'Belastung', colRest: 'Erholung',
+      add: '+ Runde hinzufügen', dragHint: 'Eine Runde an ihrer Nummer nach oben oder unten ziehen.',
+      iosHint: 'Timer als App auf den Home-Bildschirm: in Safari auf Teilen tippen, dann "Zum Home-Bildschirm".',
+      prepare: 'Vorbereitung', cool: 'Cool-down', finish: 'Ende', coolCell: 'Cool-down', less: 'weniger', more: 'mehr',
+      workRound: 'Belastung, Runde {n}', restRound: 'Erholung, Runde {n}', moveRound: 'Runde {n} verschieben mit Pfeiltasten hoch und runter',
+      dragTitle: 'Nach oben oder unten ziehen', deleteRound: 'Runde {n} löschen',
+      roundWord: { one: 'Runde', other: 'Runden' },
+      summary: 'Belastung {w} · Erholung {r}', summaryNoRest: 'Belastung {w}', range: '{a} bis {b}',
+      roundsDone: '{rounds} geschafft', roundOf: 'Runde {i} von {n}', ahead: 'Noch {rounds}', allDone: 'Alle Runden geschafft',
+      next: 'Als Nächstes: {phase} {time}', nextFinish: 'Als Nächstes: Ende', left: 'Noch {t}',
+      presetDefaultSub: '× 8, Standard', presetTabata3Sub: '3 × 8, 1:00 dazwischen',
+    },
+    fr: {
+      title: 'Minuteur Tabata', timer: 'Minuteur', language: 'Langue',
+      workout: 'Entraînement', done: 'Terminé', paused: 'En pause',
+      ph_prep: 'Préparation', ph_work: 'Effort', ph_rest: 'Repos', ph_cool: 'Retour au calme',
+      phl_prep: 'préparation', phl_work: 'effort', phl_rest: 'repos', phl_cool: 'retour au calme',
+      start: 'Démarrer', pause: 'Pause', resume: 'Reprendre', again: 'Recommencer', skip: 'Passer', reset: 'Réinitialiser',
+      spaceHint: 'Espace : démarrer et pause',
+      soundLoud: 'Son : fort', soundQuiet: 'Son : faible', soundOff: 'Son : coupé',
+      fullscreen: 'Plein écran', exitFullscreen: 'Quitter le plein écran', install: 'Installer',
+      presets: 'Modèles', rounds: 'Tours', colNo: 'N°', colWork: 'Effort', colRest: 'Repos',
+      add: '+ Ajouter un tour', dragHint: 'Faites glisser un tour par son numéro pour le monter ou le descendre.',
+      iosHint: 'Pour garder le minuteur sur l’écran d’accueil comme une app : dans Safari, touchez Partager, puis "Sur l’écran d’accueil".',
+      prepare: 'Préparation', cool: 'Retour au calme', finish: 'fin', coolCell: 'retour au calme', less: 'moins', more: 'plus',
+      workRound: 'Effort, tour {n}', restRound: 'Repos, tour {n}', moveRound: 'Tour {n}, déplacer avec les flèches haut et bas',
+      dragTitle: 'Faites glisser vers le haut ou le bas', deleteRound: 'Supprimer le tour {n}',
+      roundWord: { one: 'tour', other: 'tours' },
+      summary: 'Effort {w} · repos {r}', summaryNoRest: 'Effort {w}', range: 'de {a} à {b}',
+      roundsDone: '{rounds} terminés', roundOf: 'Tour {i} sur {n}', ahead: 'Encore {rounds}', allDone: 'Tous les tours terminés',
+      next: 'Ensuite : {phase} {time}', nextFinish: 'Ensuite : fin', left: 'Reste {t}',
+      presetDefaultSub: '× 8, par défaut', presetTabata3Sub: '3 × 8, 1:00 entre les séries',
+    },
+    pt: {
+      title: 'Timer Tabata', timer: 'Timer', language: 'Idioma',
+      workout: 'Treino', done: 'Concluído', paused: 'Pausado',
+      ph_prep: 'Preparação', ph_work: 'Exercício', ph_rest: 'Descanso', ph_cool: 'Desaquecimento',
+      phl_prep: 'preparação', phl_work: 'exercício', phl_rest: 'descanso', phl_cool: 'desaquecimento',
+      start: 'Iniciar', pause: 'Pausar', resume: 'Continuar', again: 'De novo', skip: 'Pular', reset: 'Reiniciar',
+      spaceHint: 'Espaço: iniciar e pausar',
+      soundLoud: 'Som: alto', soundQuiet: 'Som: baixo', soundOff: 'Som: desligado',
+      fullscreen: 'Tela cheia', exitFullscreen: 'Sair da tela cheia', install: 'Instalar',
+      presets: 'Modelos', rounds: 'Rodadas', colNo: 'Nº', colWork: 'Exercício', colRest: 'Descanso',
+      add: '+ Adicionar rodada', dragHint: 'Arraste uma rodada pelo número para movê-la para cima ou para baixo.',
+      iosHint: 'Para ter o timer na Tela de Início como app: no Safari toque em Compartilhar e depois em "Adicionar à Tela de Início".',
+      prepare: 'Preparação', cool: 'Desaquecimento', finish: 'fim', coolCell: 'desaquecimento', less: 'menos', more: 'mais',
+      workRound: 'Exercício, rodada {n}', restRound: 'Descanso, rodada {n}', moveRound: 'Rodada {n}, reordenar com as setas para cima e para baixo',
+      dragTitle: 'Arraste para cima ou para baixo', deleteRound: 'Excluir rodada {n}',
+      roundWord: { one: 'rodada', other: 'rodadas' },
+      summary: 'Exercício {w} · descanso {r}', summaryNoRest: 'Exercício {w}', range: 'de {a} a {b}',
+      roundsDone: '{rounds} concluídas', roundOf: 'Rodada {i} de {n}', ahead: 'Faltam {rounds}', allDone: 'Todas as rodadas concluídas',
+      next: 'A seguir: {phase} {time}', nextFinish: 'A seguir: fim', left: 'Faltam {t}',
+      presetDefaultSub: '× 8, padrão', presetTabata3Sub: '3 × 8, 1:00 entre elas',
+    },
+    it: {
+      title: 'Timer Tabata', timer: 'Timer', language: 'Lingua',
+      workout: 'Allenamento', done: 'Fatto', paused: 'In pausa',
+      ph_prep: 'Preparazione', ph_work: 'Lavoro', ph_rest: 'Recupero', ph_cool: 'Defaticamento',
+      phl_prep: 'preparazione', phl_work: 'lavoro', phl_rest: 'recupero', phl_cool: 'defaticamento',
+      start: 'Avvia', pause: 'Pausa', resume: 'Riprendi', again: 'Di nuovo', skip: 'Salta', reset: 'Azzera',
+      spaceHint: 'Spazio: avvia e pausa',
+      soundLoud: 'Audio: alto', soundQuiet: 'Audio: basso', soundOff: 'Audio: spento',
+      fullscreen: 'Schermo intero', exitFullscreen: 'Esci da schermo intero', install: 'Installa',
+      presets: 'Modelli', rounds: 'Round', colNo: 'N.', colWork: 'Lavoro', colRest: 'Recupero',
+      add: '+ Aggiungi round', dragHint: 'Trascina un round dal numero per spostarlo su o giù.',
+      iosHint: 'Per avere il timer nella schermata Home come app: in Safari tocca Condividi, poi "Aggiungi alla schermata Home".',
+      prepare: 'Preparazione', cool: 'Defaticamento', finish: 'fine', coolCell: 'defaticamento', less: 'meno', more: 'più',
+      workRound: 'Lavoro, round {n}', restRound: 'Recupero, round {n}', moveRound: 'Round {n}, riordina con le frecce su e giù',
+      dragTitle: 'Trascina su o giù', deleteRound: 'Elimina round {n}',
+      roundWord: { one: 'round', other: 'round' },
+      summary: 'Lavoro {w} · recupero {r}', summaryNoRest: 'Lavoro {w}', range: 'da {a} a {b}',
+      roundsDone: '{rounds} completati', roundOf: 'Round {i} di {n}', ahead: 'Ancora {rounds}', allDone: 'Tutti i round completati',
+      next: 'Poi: {phase} {time}', nextFinish: 'Poi: fine', left: 'Mancano {t}',
+      presetDefaultSub: '× 8, predefinito', presetTabata3Sub: '3 × 8, 1:00 tra le serie',
+    },
+    tr: {
+      title: 'Tabata Zamanlayıcı', timer: 'Zamanlayıcı', language: 'Dil',
+      workout: 'Antrenman', done: 'Bitti', paused: 'Duraklatıldı',
+      ph_prep: 'Hazırlık', ph_work: 'Çalışma', ph_rest: 'Dinlenme', ph_cool: 'Soğuma',
+      phl_prep: 'hazırlık', phl_work: 'çalışma', phl_rest: 'dinlenme', phl_cool: 'soğuma',
+      start: 'Başlat', pause: 'Duraklat', resume: 'Devam', again: 'Tekrar', skip: 'Atla', reset: 'Sıfırla',
+      spaceHint: 'Boşluk: başlat ve duraklat',
+      soundLoud: 'Ses: yüksek', soundQuiet: 'Ses: düşük', soundOff: 'Ses: kapalı',
+      fullscreen: 'Tam ekran', exitFullscreen: 'Tam ekrandan çık', install: 'Yükle',
+      presets: 'Hazır ayarlar', rounds: 'Turlar', colNo: 'No', colWork: 'Çalışma', colRest: 'Dinlenme',
+      add: '+ Tur ekle', dragHint: 'Bir turu numarasından tutarak yukarı veya aşağı sürükleyin.',
+      iosHint: 'Zamanlayıcıyı ana ekranda uygulama olarak tutmak için: Safari’de Paylaş’a, ardından "Ana Ekrana Ekle"ye dokunun.',
+      prepare: 'Hazırlık', cool: 'Soğuma', finish: 'bitiş', coolCell: 'soğuma', less: 'azalt', more: 'artır',
+      workRound: 'Çalışma, tur {n}', restRound: 'Dinlenme, tur {n}', moveRound: 'Tur {n}, yukarı ve aşağı oklarla sırala',
+      dragTitle: 'Yukarı veya aşağı sürükleyin', deleteRound: '{n}. turu sil',
+      roundWord: { one: 'tur', other: 'tur' },
+      summary: 'Çalışma {w} · dinlenme {r}', summaryNoRest: 'Çalışma {w}', range: '{a} ile {b} arası',
+      roundsDone: '{rounds} tamamlandı', roundOf: 'Tur {i} / {n}', ahead: '{rounds} kaldı', allDone: 'Tüm turlar tamamlandı',
+      next: 'Sırada: {phase} {time}', nextFinish: 'Sırada: bitiş', left: '{t} kaldı',
+      presetDefaultSub: '× 8, varsayılan', presetTabata3Sub: '3 × 8, arada 1:00',
+    },
+    zh: {
+      title: 'Tabata 计时器', timer: '计时器', language: '语言',
+      workout: '训练', done: '完成', paused: '已暂停',
+      ph_prep: '准备', ph_work: '运动', ph_rest: '休息', ph_cool: '放松',
+      start: '开始', pause: '暂停', resume: '继续', again: '再来一次', skip: '跳过', reset: '重置',
+      spaceHint: '空格键：开始和暂停',
+      soundLoud: '声音：大', soundQuiet: '声音：小', soundOff: '声音：关',
+      fullscreen: '全屏', exitFullscreen: '退出全屏', install: '安装',
+      presets: '预设', rounds: '轮次', colNo: '#', colWork: '运动', colRest: '休息',
+      add: '+ 添加一轮', dragHint: '按住序号上下拖动即可调整顺序。',
+      iosHint: '将计时器作为应用添加到主屏幕：在 Safari 中点击"分享"，然后选择"添加到主屏幕"。',
+      prepare: '准备', cool: '放松', finish: '结束', coolCell: '放松', less: '减少', more: '增加',
+      workRound: '运动，第 {n} 轮', restRound: '休息，第 {n} 轮', moveRound: '第 {n} 轮，用上下方向键调整顺序',
+      dragTitle: '上下拖动', deleteRound: '删除第 {n} 轮',
+      roundWord: { other: '轮' },
+      summary: '运动 {w} · 休息 {r}', summaryNoRest: '运动 {w}', range: '{a} 至 {b}',
+      roundsDone: '已完成 {rounds}', roundOf: '第 {i} 轮，共 {n} 轮', ahead: '还有 {rounds}', allDone: '全部完成',
+      next: '下一项：{phase} {time}', nextFinish: '下一项：结束', left: '剩余 {t}',
+      presetDefaultSub: '× 8，默认', presetTabata3Sub: '3 × 8，组间 1:00',
+    },
+    ja: {
+      title: 'タバタタイマー', appName: 'タバタ', timer: 'タイマー', language: '言語',
+      workout: 'トレーニング', done: '完了', paused: '一時停止中',
+      ph_prep: '準備', ph_work: '運動', ph_rest: '休憩', ph_cool: 'クールダウン',
+      start: 'スタート', pause: '一時停止', resume: '再開', again: 'もう一度', skip: 'スキップ', reset: 'リセット',
+      spaceHint: 'スペース：スタートと一時停止',
+      soundLoud: '音：大', soundQuiet: '音：小', soundOff: '音：オフ',
+      fullscreen: '全画面', exitFullscreen: '全画面を終了', install: 'インストール',
+      presets: 'プリセット', rounds: 'ラウンド', colNo: '#', colWork: '運動', colRest: '休憩',
+      add: '+ ラウンドを追加', dragHint: '番号をドラッグすると、ラウンドを上下に移動できます。',
+      iosHint: 'ホーム画面にアプリとして追加するには：Safari で共有をタップし、"ホーム画面に追加"を選びます。',
+      prepare: '準備', cool: 'クールダウン', finish: '終了', coolCell: 'クールダウン', less: '減らす', more: '増やす',
+      workRound: '運動、ラウンド {n}', restRound: '休憩、ラウンド {n}', moveRound: 'ラウンド {n}、上下の矢印キーで並べ替え',
+      dragTitle: '上下にドラッグ', deleteRound: 'ラウンド {n} を削除',
+      roundWord: { other: 'ラウンド' },
+      summary: '運動 {w} · 休憩 {r}', summaryNoRest: '運動 {w}', range: '{a}〜{b}',
+      roundsDone: '{rounds} 完了', roundOf: 'ラウンド {i} / {n}', ahead: '残り {rounds}', allDone: '全ラウンド完了',
+      next: '次：{phase} {time}', nextFinish: '次：終了', left: '残り {t}',
+      presetTabata: 'タバタ', presetTabata3: 'タバタ × 3', presetDefaultSub: '× 8、デフォルト', presetTabata3Sub: '3 × 8、間に 1:00',
+    },
+  };
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  let lang = 'en', dict = I18N.en, plurals = null, chosenLang = null;
+  function t(key, vars) {
+    let s = has(dict, key) ? dict[key] : I18N.en[key];
+    if (typeof s !== 'string') return key;
+    if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (has(vars, k) ? String(vars[k]) : m));
+    return s;
+  }
+  function phase(type, lower) {
+    if (lower && has(dict, 'phl_' + type)) return dict['phl_' + type];
+    return t('ph_' + type);
+  }
+  function roundsText(n) {
+    const forms = dict.roundWord || I18N.en.roundWord;
+    let cat = 'other';
+    try { if (plurals) cat = plurals.select(n); } catch (e) { /* ничего */ }
+    return t('nRounds', { n: n, w: forms[cat] || forms.other });
+  }
+  function detectLang() {
+    const list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+    for (const l of list) {
+      const c = String(l).toLowerCase().split('-')[0];
+      if (I18N[c]) return c;
+    }
+    return 'en';
+  }
+
   const FIELDS = [
-    { k: 'prepare', label: 'Подготовка', step: 5, min: 0, max: 600, chip: 'prep', host: '#fPrep' },
-    { k: 'cool', label: 'Заминка', step: 15, min: 0, max: 3600, chip: 'cool', host: '#fCool', after: true },
+    { k: 'prepare', step: 5, min: 0, max: 600, chip: 'prep', host: '#fPrep' },
+    { k: 'cool', step: 15, min: 0, max: 3600, chip: 'cool', host: '#fCool', after: true },
   ];
   const LIM = { w: { min: 5, max: 3600, step: 5 }, r: { min: 0, max: 3600, step: 5 } };
   const MAX_ROUNDS = 99;
   const rep = (n, w, r) => Array.from({ length: n }, () => ({ w, r }));
   const PRESETS = [
-    { name: '1:00 / 1:00', sub: '× 8, по умолчанию', wide: true, v: () => ({ prepare: 10, cool: 0, list: rep(8, 60, 60) }) },
-    { name: 'Табата', sub: '20/10 × 8', v: () => ({ prepare: 10, cool: 0, list: rep(8, 20, 10) }) },
-    { name: 'Табата × 3', sub: '3 × 8, между ними 1:00', v: () => {
+    { name: '1:00 / 1:00', subKey: 'presetDefaultSub', wide: true, v: () => ({ prepare: 10, cool: 0, list: rep(8, 60, 60) }) },
+    { nameKey: 'presetTabata', sub: '20/10 × 8', v: () => ({ prepare: 10, cool: 0, list: rep(8, 20, 10) }) },
+    { nameKey: 'presetTabata3', subKey: 'presetTabata3Sub', v: () => {
       const l = rep(24, 20, 10); l[7].r = 60; l[15].r = 60;
       return { prepare: 10, cool: 0, list: l };
     } },
     { name: '40/20', sub: '× 8', v: () => ({ prepare: 10, cool: 0, list: rep(8, 40, 20) }) },
     { name: '30/30', sub: '× 10', v: () => ({ prepare: 10, cool: 0, list: rep(10, 30, 30) }) },
   ];
-  const NAMES = { prep: 'Подготовка', work: 'Работа', rest: 'Отдых', cool: 'Заминка' };
-  const W_ROUND = ['круг', 'круга', 'кругов'];
   const KEY = 'tabata-timer-v2', OLD_KEY = 'tabata-timer-v1';
 
   function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
   function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function big(s) { return s < 60 ? String(s) : mmss(s); }
-  function plural(n, f) { const a = n % 10, b = n % 100; return f[(a === 1 && b !== 11) ? 0 : (a >= 2 && a <= 4 && (b < 12 || b > 14)) ? 1 : 2]; }
   const sigOf = (s) => JSON.stringify([s.prepare, s.cool, s.list.map((it) => [it.w, it.r])]);
   const snap = (s) => ({ prepare: s.prepare, cool: s.cool, list: s.list.map((it) => ({ w: it.w, r: it.r })) });
 
-  /* Настройки: список кругов + подготовка и заминка; хранятся только в этом браузере */
+  /* Настройки: список кругов + подготовка и заминка + язык; хранятся только в этом браузере */
   let S = PRESETS[0].v();
-  const VOLUMES = [{ v: 1, label: 'Звук: громко' }, { v: 0.35, label: 'Звук: тише' }, { v: 0, label: 'Звук: выкл' }];
+  const VOLUMES = [{ v: 1, key: 'soundLoud' }, { v: 0.35, key: 'soundQuiet' }, { v: 0, key: 'soundOff' }];
   let volIdx = 0;
   function num(v, d, a, b) { return Number.isFinite(v) ? clamp(Math.round(v), a, b) : d; }
   function readState(o) {
@@ -368,6 +620,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     let o = null, st = null;
     const raw = localStorage.getItem(KEY);
     if (raw) { o = JSON.parse(raw); st = readState(o); }
+    if (o && typeof o.lang === 'string' && I18N[o.lang]) chosenLang = o.lang;
     if (!st) {
       const old = localStorage.getItem(OLD_KEY);
       if (old) { o = JSON.parse(old); st = readState(fromV1(o)); }
@@ -377,7 +630,9 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     else if (o && o.sound === false) volIdx = 2;
   } catch (e) { /* без сохранения */ }
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify({ volIdx, prepare: S.prepare, cool: S.cool, list: S.list })); } catch (e) { /* ничего */ }
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ volIdx, lang: chosenLang, prepare: S.prepare, cool: S.cool, list: S.list }));
+    } catch (e) { /* ничего */ }
   }
 
   function buildPlan(s) {
@@ -404,25 +659,25 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     const level = VOLUMES[volIdx].v;
     if (!level) return;
     const a = audio(); if (!a) return;
-    const t = a.currentTime + (when || 0);
+    const tt = a.currentTime + (when || 0);
     const peak = 0.9 * level;
     const g = a.createGain();
     g.connect(a.destination);
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(peak, t + 0.005);
-    g.gain.setValueAtTime(peak, t + dur - 0.03);
-    g.gain.linearRampToValueAtTime(0, t + dur);
+    g.gain.setValueAtTime(0, tt);
+    g.gain.linearRampToValueAtTime(peak, tt + 0.005);
+    g.gain.setValueAtTime(peak, tt + dur - 0.03);
+    g.gain.linearRampToValueAtTime(0, tt + dur);
     [[freq, 0.7], [freq * 2, 0.3]].forEach(([f, k]) => {
       const o = a.createOscillator(), og = a.createGain();
       o.type = 'square'; o.frequency.value = f; og.gain.value = k;
-      o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + 0.02);
+      o.connect(og); og.connect(g); o.start(tt); o.stop(tt + dur + 0.02);
     });
   }
-  function phaseSound(t) {
-    if (t === 'work') { beep(1400, 0.7); }
-    else if (t === 'rest') { beep(700, 0.22); beep(700, 0.22, 0.32); }
-    else if (t === 'prep') { beep(1000, 0.2); }
-    else if (t === 'cool') { beep(600, 0.8); }
+  function phaseSound(type) {
+    if (type === 'work') { beep(1400, 0.7); }
+    else if (type === 'rest') { beep(700, 0.22); beep(700, 0.22, 0.32); }
+    else if (type === 'prep') { beep(1000, 0.2); }
+    else if (type === 'cool') { beep(600, 0.8); }
   }
 
   /* Не гасить экран */
@@ -541,11 +796,12 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   }
   function range(vals) {
     const a = Math.min.apply(null, vals), b = Math.max.apply(null, vals);
-    return a === b ? mmss(a) : 'от ' + mmss(a) + ' до ' + mmss(b);
+    return a === b ? mmss(a) : t('range', { a: mmss(a), b: mmss(b) });
   }
   function summary(s) {
+    const works = range(s.list.map((it) => it.w));
     const rests = s.list.slice(0, -1).map((it) => it.r);
-    return 'Работа ' + range(s.list.map((it) => it.w)) + (rests.length ? ' · отдых ' + range(rests) : '');
+    return rests.length ? t('summary', { w: works, r: range(rests) }) : t('summaryNoRest', { w: works });
   }
   function render() {
     const live = state === 'running' || state === 'paused';
@@ -555,37 +811,35 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     stopBtn.disabled = state === 'idle';
 
     if (state === 'idle') {
-      const n = S.list.length;
       stage.dataset.phase = 'idle';
-      phaseEl.textContent = 'Тренировка';
+      phaseEl.textContent = t('workout');
       clock.textContent = mmss(totalOf(plan));
-      roundInfo.textContent = n + ' ' + plural(n, W_ROUND);
+      roundInfo.textContent = roundsText(S.list.length);
       nextInfo.textContent = summary(S);
       leftInfo.textContent = '';
-      startBtn.textContent = 'Старт';
+      startBtn.textContent = t('start');
     } else if (state === 'done') {
-      const n = R.list.length;
       stage.dataset.phase = 'done';
-      phaseEl.textContent = 'Готово';
+      phaseEl.textContent = t('done');
       clock.textContent = mmss(totalOf(plan));
-      roundInfo.textContent = n + ' ' + plural(n, W_ROUND) + ' позади';
+      roundInfo.textContent = t('roundsDone', { rounds: roundsText(R.list.length) });
       nextInfo.textContent = '';
       leftInfo.textContent = '';
-      startBtn.textContent = 'Ещё раз';
+      startBtn.textContent = t('again');
     } else {
       const it = plan[idx], n = R.list.length;
       stage.dataset.phase = it.type;
-      phaseEl.textContent = (state === 'paused' ? 'Пауза · ' : '') + NAMES[it.type];
+      phaseEl.textContent = (state === 'paused' ? t('paused') + ' · ' : '') + phase(it.type);
       clock.textContent = big(Math.ceil(remainMs / 1000));
-      if (it.type === 'work' || it.type === 'rest') roundInfo.textContent = 'Круг ' + it.round + ' из ' + n;
-      else if (it.type === 'prep') roundInfo.textContent = 'Впереди ' + n + ' ' + plural(n, W_ROUND);
-      else roundInfo.textContent = 'Все круги позади';
+      if (it.type === 'work' || it.type === 'rest') roundInfo.textContent = t('roundOf', { i: it.round, n: n });
+      else if (it.type === 'prep') roundInfo.textContent = t('ahead', { rounds: roundsText(n) });
+      else roundInfo.textContent = t('allDone');
       const nx = plan[idx + 1];
-      nextInfo.textContent = nx ? 'Дальше: ' + NAMES[nx.type].toLowerCase() + ' ' + mmss(nx.dur) : 'Дальше: финиш';
+      nextInfo.textContent = nx ? t('next', { phase: phase(nx.type, true), time: mmss(nx.dur) }) : t('nextFinish');
       let rest = remainMs / 1000;
       for (let i = idx + 1; i < plan.length; i++) rest += plan[i].dur;
-      leftInfo.textContent = 'Осталось ' + mmss(Math.ceil(rest));
-      startBtn.textContent = state === 'paused' ? 'Продолжить' : 'Пауза';
+      leftInfo.textContent = t('left', { t: mmss(Math.ceil(rest)) });
+      startBtn.textContent = state === 'paused' ? t('resume') : t('pause');
     }
     updateTimeline();
   }
@@ -613,21 +867,31 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     const row = document.createElement('div');
     row.className = 'field' + (f.after ? ' after' : '');
     row.innerHTML =
-      '<label for="f-' + f.k + '"><i class="chip" style="--k: var(--' + f.chip + ')"></i>' + f.label + '</label>' +
+      '<label for="f-' + f.k + '"><i class="chip" style="--k: var(--' + f.chip + ')"></i><span></span></label>' +
       '<div class="stepper">' +
-      '<button type="button" data-d="-1" aria-label="' + f.label + ': меньше">−</button>' +
+      '<button type="button" data-d="-1">−</button>' +
       '<input id="f-' + f.k + '" type="text" inputmode="text" autocomplete="off" spellcheck="false">' +
-      '<button type="button" data-d="1" aria-label="' + f.label + ': больше">+</button>' +
+      '<button type="button" data-d="1">+</button>' +
       '</div>';
     const input = row.querySelector('input');
     const setF = (v) => { S[f.k] = clamp(Math.round(v), f.min, f.max); save(); settingsChanged(); };
-    row.querySelectorAll('button').forEach((b) => {
+    f.btns = row.querySelectorAll('button');
+    f.btns.forEach((b) => {
       b.addEventListener('click', () => setF(nextVal(S[f.k], f.step, Number(b.dataset.d))));
     });
     input.addEventListener('change', () => setF(parseVal(input.value, S[f.k])));
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
     inputs[f.k] = input;
+    f.labelEl = row.querySelector('label span');
     $(f.host).appendChild(row);
+  }
+  function renderFieldLabels() {
+    for (const f of FIELDS) {
+      const name = t(f.k);
+      f.labelEl.textContent = name;
+      f.btns[0].setAttribute('aria-label', name + ': ' + t('less'));
+      f.btns[1].setAttribute('aria-label', name + ': ' + t('more'));
+    }
   }
 
   /* Список кругов */
@@ -638,15 +902,19 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     save(); settingsChanged();
   }
   function mini(i, key) {
-    const label = (key === 'w' ? 'Работа' : 'Отдых') + ', круг ' + (i + 1);
+    const label = t(key === 'w' ? 'workRound' : 'restRound', { n: i + 1 });
     const el = document.createElement('div');
     el.className = 'mini ' + (key === 'w' ? 'is-work' : 'is-rest');
     el.innerHTML =
-      '<button type="button" data-d="-1" aria-label="' + label + ': меньше">−</button>' +
-      '<input id="c' + key + '-' + i + '" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="' + label + '">' +
-      '<button type="button" data-d="1" aria-label="' + label + ': больше">+</button>';
+      '<button type="button" data-d="-1">−</button>' +
+      '<input id="c' + key + '-' + i + '" type="text" inputmode="text" autocomplete="off" spellcheck="false">' +
+      '<button type="button" data-d="1">+</button>';
     const input = el.querySelector('input');
-    el.querySelectorAll('button').forEach((b) => {
+    const btns = el.querySelectorAll('button');
+    input.setAttribute('aria-label', label);
+    btns[0].setAttribute('aria-label', label + ': ' + t('less'));
+    btns[1].setAttribute('aria-label', label + ': ' + t('more'));
+    btns.forEach((b) => {
       b.addEventListener('click', () => setItem(i, key, nextVal(S.list[i][key], LIM[key].step, Number(b.dataset.d))));
     });
     input.addEventListener('change', () => setItem(i, key, parseVal(input.value, S.list[i][key])));
@@ -671,15 +939,15 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       const row = document.createElement('div');
       row.className = 'crow'; row.dataset.i = i;
       const h = document.createElement('button');
-      h.type = 'button'; h.className = 'handle'; h.title = 'Перетащите выше или ниже';
-      h.setAttribute('aria-label', 'Круг ' + (i + 1) + ', переставить: стрелки вверх и вниз');
+      h.type = 'button'; h.className = 'handle'; h.title = t('dragTitle');
+      h.setAttribute('aria-label', t('moveRound', { n: i + 1 }));
       h.innerHTML = '<span class="grip" aria-hidden="true"></span><span class="num"></span>';
       const w = mini(i, 'w'), r = mini(i, 'r');
       const none = document.createElement('span');
       none.className = 'none';
       const del = document.createElement('button');
       del.type = 'button'; del.className = 'del'; del.textContent = '×';
-      del.setAttribute('aria-label', 'Удалить круг ' + (i + 1));
+      del.setAttribute('aria-label', t('deleteRound', { n: i + 1 }));
       del.addEventListener('click', () => removeAt(i));
       h.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
@@ -704,7 +972,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       c.w.input.value = mmss(it.w);
       c.r.input.value = mmss(it.r);
       c.r.el.hidden = last; c.none.hidden = !last;
-      c.none.textContent = S.cool > 0 ? 'заминка' : 'финиш';
+      c.none.textContent = S.cool > 0 ? t('coolCell') : t('finish');
       c.del.disabled = n < 2;
     });
     addBtn.disabled = n >= MAX_ROUNDS;
@@ -786,10 +1054,16 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   for (const p of PRESETS) {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'preset' + (p.wide ? ' wide' : '');
-    b.innerHTML = '<b>' + p.name + '</b><span>' + p.sub + '</span>';
+    b.innerHTML = '<b></b><span></span>';
     b.addEventListener('click', () => { S = p.v(); listDirty = true; save(); settingsChanged(); });
     p.el = b; p.sig = sigOf(p.v());
     presetsEl.appendChild(b);
+  }
+  function renderPresetTexts() {
+    for (const p of PRESETS) {
+      p.el.querySelector('b').textContent = p.nameKey ? t(p.nameKey) : p.name;
+      p.el.querySelector('span').textContent = p.subKey ? t(p.subKey) : p.sub;
+    }
   }
 
   function settingsChanged() {
@@ -797,8 +1071,8 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     renderList();
     const sig = sigOf(S);
     for (const p of PRESETS) p.el.setAttribute('aria-pressed', p.sig === sig ? 'true' : 'false');
-    const p = buildPlan(S), n = S.list.length;
-    $('#total').textContent = mmss(totalOf(p)) + ' · ' + n + ' ' + plural(n, W_ROUND);
+    const p = buildPlan(S);
+    $('#total').textContent = t('total', { t: mmss(totalOf(p)), rounds: roundsText(S.list.length) });
     if (state === 'idle' || state === 'done') {
       if (state === 'done') state = 'idle';
       plan = p; buildTimeline(plan); render();
@@ -812,7 +1086,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 
   const soundBtn = $('#soundBtn');
   function renderSound() {
-    soundBtn.textContent = VOLUMES[volIdx].label;
+    soundBtn.textContent = t(VOLUMES[volIdx].key);
     soundBtn.setAttribute('aria-pressed', String(VOLUMES[volIdx].v > 0));
   }
   soundBtn.addEventListener('click', () => {
@@ -821,6 +1095,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   });
 
   const fsBtn = $('#fsBtn');
+  function renderFs() { fsBtn.textContent = document.fullscreenElement ? t('exitFullscreen') : t('fullscreen'); }
   if (!document.documentElement.requestFullscreen) fsBtn.hidden = true;
   fsBtn.addEventListener('click', () => {
     try {
@@ -828,11 +1103,9 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       else document.documentElement.requestFullscreen().catch(() => {});
     } catch (e) { /* не поддерживается */ }
   });
-  document.addEventListener('fullscreenchange', () => {
-    fsBtn.textContent = document.fullscreenElement ? 'Свернуть' : 'Весь экран';
-  });
+  document.addEventListener('fullscreenchange', renderFs);
 
-  function isTyping(t) { return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA'); }
+  function isTyping(el) { return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT'); }
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'Space' || isTyping(e.target)) return;
     e.preventDefault();
@@ -865,8 +1138,31 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 
-  renderSound();
-  settingsChanged();
+  /* Язык */
+  const langSel = $('#langSel');
+  for (const [code, name] of LANGS) {
+    const o = document.createElement('option');
+    o.value = code; o.textContent = name;
+    langSel.appendChild(o);
+  }
+  function applyLang(code) {
+    lang = I18N[code] ? code : 'en';
+    dict = I18N[lang];
+    try { plurals = new Intl.PluralRules(lang); } catch (e) { plurals = null; }
+    document.documentElement.lang = lang;
+    document.title = t('title');
+    const am = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (am) am.setAttribute('content', t('appName'));
+    document.querySelectorAll('[data-i]').forEach((el) => { el.textContent = t(el.dataset.i); });
+    document.querySelectorAll('[data-i-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.iAria)); });
+    langSel.value = lang;
+    renderFieldLabels(); renderPresetTexts(); renderSound(); renderFs();
+    listDirty = true;
+    settingsChanged();
+  }
+  langSel.addEventListener('change', () => { chosenLang = langSel.value; applyLang(chosenLang); save(); });
+
+  applyLang(chosenLang || detectLang());
 })();
 </script>
 </body>
