@@ -293,14 +293,18 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   font: 600 15px var(--text); cursor: pointer;
 }
 .wk-note { margin: 0; font-size: 13px; color: var(--muted); }
-.wk-warn { margin: 0; padding: 9px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; color: var(--fg); background: var(--warn); }
 .wk-save button.attn { background: var(--prep); color: var(--on-prep); }
-.stage-title { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; min-width: 0; }
-.pill {
-  font: 600 12px var(--text); letter-spacing: .02em; padding: 5px 10px; border: 0; border-radius: 999px;
-  background: var(--prep); color: var(--on-prep); cursor: pointer;
+/* Плашка "не сохранено": прилипает к верху экрана, в ней поле названия и кнопка */
+.savebar {
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px); z-index: 20;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+  padding: 10px 12px; border-radius: 14px; background: var(--warn); box-shadow: 0 6px 18px var(--shadow);
 }
-body.live .pill { display: none; }
+.savebar-msg { flex: 1 1 260px; min-width: 0; margin: 0; font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--fg); }
+.savebar-form { flex: 1 1 320px; min-width: 0; }
+.savebar .wk-save input { background: var(--surface); }
+body.live .savebar { display: none; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 .wk-note.err { color: var(--work); }
 
 /* Вход */
@@ -358,6 +362,10 @@ body.live .pill { display: none; }
 </head>
 <body>
 <div class="app">
+  <div class="savebar" id="saveBar" hidden>
+    <p class="savebar-msg" id="wkWarn" role="status"></p>
+    <div class="savebar-form" id="barHome"></div>
+  </div>
   <header class="top">
     <h1 data-i="appName">Табата</h1>
     <div class="top-side">
@@ -370,10 +378,7 @@ body.live .pill { display: none; }
   <main class="main">
     <section class="stage" id="stage" data-phase="idle" data-i-aria="timer" aria-label="Таймер">
       <div class="stage-top">
-        <div class="stage-title">
-          <span class="phase" id="phase">Тренировка</span>
-          <button class="pill" id="unsavedPill" type="button" data-i="unsavedPill" hidden>Не сохранено</button>
-        </div>
+        <span class="phase" id="phase">Тренировка</span>
         <div class="tools">
           <button class="tool" id="soundBtn" type="button" aria-pressed="true">Звук: громко</button>
           <button class="tool" id="fsBtn" type="button">Весь экран</button>
@@ -400,11 +405,12 @@ body.live .pill { display: none; }
       <div class="wk">
         <div class="wk-list" id="wkList"></div>
         <p class="wk-note" id="wkEmpty" data-i="wkEmpty">Сохраните текущий список кругов, чтобы потом открыть его одним нажатием.</p>
-        <p class="wk-warn" id="wkWarn" role="status" hidden></p>
+        <div id="wkHome">
         <form class="wk-save" id="wkSave">
           <input id="wkName" type="text" maxlength="60" autocomplete="off" spellcheck="false" data-i-ph="wkNamePh" data-i-aria="wkNamePh" placeholder="Название, например Ноги" aria-label="Название, например Ноги">
           <button type="submit" id="wkSaveBtn">Сохранить</button>
         </form>
+        </div>
         <p class="wk-note" id="wkSync">Хранятся в этом браузере.</p>
       </div>
       <h2 data-i="presets">Готовые</h2>
@@ -821,18 +827,18 @@ body.live .pill { display: none; }
     },
   };
   for (const code of Object.keys(I18N_CLOUD)) Object.assign(I18N[code], I18N_CLOUD[code]);
-  /* Подсказка "не сохранено" */
+  /* Плашка "не сохранено" */
   const I18N_UNSAVED = {
-    en: { unsavedNew: 'These rounds aren’t saved. Enter a name and tap "Save" so you don’t lose them.', unsavedNewCloud: 'These rounds aren’t saved. Enter a name and tap "Save" to have them on all your devices.', unsavedEdit: 'Changes to "{name}" aren’t saved. Tap "Update".', unsavedPill: 'Not saved' },
-    ru: { unsavedNew: 'Круги не сохранены. Введите название и нажмите "Сохранить", чтобы не потерять их.', unsavedNewCloud: 'Круги не сохранены. Введите название и нажмите "Сохранить", чтобы они были на всех ваших устройствах.', unsavedEdit: 'Изменения в "{name}" не сохранены. Нажмите "Обновить".', unsavedPill: 'Не сохранено' },
-    es: { unsavedNew: 'Estas rondas no están guardadas. Escribe un nombre y pulsa "Guardar" para no perderlas.', unsavedNewCloud: 'Estas rondas no están guardadas. Escribe un nombre y pulsa "Guardar" para tenerlas en todos tus dispositivos.', unsavedEdit: 'Los cambios en "{name}" no están guardados. Pulsa "Actualizar".', unsavedPill: 'Sin guardar' },
-    de: { unsavedNew: 'Diese Runden sind nicht gespeichert. Gib einen Namen ein und tippe auf "Speichern", damit sie nicht verloren gehen.', unsavedNewCloud: 'Diese Runden sind nicht gespeichert. Gib einen Namen ein und tippe auf "Speichern", um sie auf allen Geräten zu haben.', unsavedEdit: 'Änderungen an "{name}" sind nicht gespeichert. Tippe auf "Aktualisieren".', unsavedPill: 'Nicht gespeichert' },
-    fr: { unsavedNew: 'Ces tours ne sont pas enregistrés. Saisissez un nom et touchez "Enregistrer" pour ne pas les perdre.', unsavedNewCloud: 'Ces tours ne sont pas enregistrés. Saisissez un nom et touchez "Enregistrer" pour les retrouver sur tous vos appareils.', unsavedEdit: 'Les modifications de "{name}" ne sont pas enregistrées. Touchez "Mettre à jour".', unsavedPill: 'Non enregistré' },
-    pt: { unsavedNew: 'Estas rodadas não estão salvas. Digite um nome e toque em "Salvar" para não perdê-las.', unsavedNewCloud: 'Estas rodadas não estão salvas. Digite um nome e toque em "Salvar" para tê-las em todos os seus dispositivos.', unsavedEdit: 'As alterações em "{name}" não estão salvas. Toque em "Atualizar".', unsavedPill: 'Não salvo' },
-    it: { unsavedNew: 'Questi round non sono salvati. Inserisci un nome e tocca "Salva" per non perderli.', unsavedNewCloud: 'Questi round non sono salvati. Inserisci un nome e tocca "Salva" per averli su tutti i dispositivi.', unsavedEdit: 'Le modifiche a "{name}" non sono salvate. Tocca "Aggiorna".', unsavedPill: 'Non salvato' },
-    tr: { unsavedNew: 'Bu turlar kaydedilmedi. Kaybolmaması için bir ad girip "Kaydet"e dokunun.', unsavedNewCloud: 'Bu turlar kaydedilmedi. Tüm cihazlarınızda olması için bir ad girip "Kaydet"e dokunun.', unsavedEdit: '"{name}" üzerindeki değişiklikler kaydedilmedi. "Güncelle"ye dokunun.', unsavedPill: 'Kaydedilmedi' },
-    zh: { unsavedNew: '这些轮次尚未保存。输入名称并点击"保存"，以免丢失。', unsavedNewCloud: '这些轮次尚未保存。输入名称并点击"保存"，即可在所有设备上使用。', unsavedEdit: '对"{name}"的更改尚未保存。请点击"更新"。', unsavedPill: '未保存' },
-    ja: { unsavedNew: 'このラウンドは保存されていません。失わないように、名前を入力して"保存"を押してください。', unsavedNewCloud: 'このラウンドは保存されていません。すべてのデバイスで使うには、名前を入力して"保存"を押してください。', unsavedEdit: '"{name}" の変更は保存されていません。"更新"を押してください。', unsavedPill: '未保存' },
+    en: { unsavedNew: 'Rounds not saved. Name them and save so you don’t lose them.', unsavedNewCloud: 'Rounds not saved. Save them to have them on all your devices.', unsavedEdit: 'Changes to "{name}" aren’t saved.' },
+    ru: { unsavedNew: 'Круги не сохранены. Дайте название и сохраните, чтобы не потерять.', unsavedNewCloud: 'Круги не сохранены. Сохраните, чтобы они были на всех устройствах.', unsavedEdit: 'Изменения в "{name}" не сохранены.' },
+    es: { unsavedNew: 'Rondas sin guardar. Ponles nombre y guárdalas para no perderlas.', unsavedNewCloud: 'Rondas sin guardar. Guárdalas para tenerlas en todos tus dispositivos.', unsavedEdit: 'Cambios en "{name}" sin guardar.' },
+    de: { unsavedNew: 'Runden nicht gespeichert. Benenne und speichere sie, damit sie nicht verloren gehen.', unsavedNewCloud: 'Runden nicht gespeichert. Speichere sie, um sie auf allen Geräten zu haben.', unsavedEdit: 'Änderungen an "{name}" nicht gespeichert.' },
+    fr: { unsavedNew: 'Tours non enregistrés. Nommez-les et enregistrez-les pour ne pas les perdre.', unsavedNewCloud: 'Tours non enregistrés. Enregistrez-les pour les retrouver sur tous vos appareils.', unsavedEdit: 'Modifications de "{name}" non enregistrées.' },
+    pt: { unsavedNew: 'Rodadas não salvas. Dê um nome e salve para não perdê-las.', unsavedNewCloud: 'Rodadas não salvas. Salve para tê-las em todos os seus dispositivos.', unsavedEdit: 'Alterações em "{name}" não salvas.' },
+    it: { unsavedNew: 'Round non salvati. Dagli un nome e salvali per non perderli.', unsavedNewCloud: 'Round non salvati. Salvali per averli su tutti i dispositivi.', unsavedEdit: 'Modifiche a "{name}" non salvate.' },
+    tr: { unsavedNew: 'Turlar kaydedilmedi. Kaybolmaması için ad verip kaydedin.', unsavedNewCloud: 'Turlar kaydedilmedi. Tüm cihazlarınızda olması için kaydedin.', unsavedEdit: '"{name}" değişiklikleri kaydedilmedi.' },
+    zh: { unsavedNew: '轮次尚未保存。起个名字并保存，以免丢失。', unsavedNewCloud: '轮次尚未保存。保存后即可在所有设备上使用。', unsavedEdit: '"{name}"的更改尚未保存。' },
+    ja: { unsavedNew: 'ラウンドは保存されていません。失わないように名前を付けて保存してください。', unsavedNewCloud: 'ラウンドは保存されていません。保存すると、すべてのデバイスで使えます。', unsavedEdit: '"{name}" の変更は保存されていません。' },
   };
   for (const code of Object.keys(I18N_UNSAVED)) Object.assign(I18N[code], I18N_UNSAVED[code]);
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -1497,9 +1503,15 @@ body.live .pill { display: none; }
     renderSaveLabel();
     renderUnsaved();
   }
-  /* Не сохранено: круги изменены и не совпадают ни с открытой тренировкой, ни с сохранённой, ни с готовым набором */
-  const wkWarn = $('#wkWarn'), unsavedPill = $('#unsavedPill');
+  /* Не сохранено: круги изменены и не совпадают ни с открытой тренировкой, ни с сохранённой, ни с готовым набором.
+     Плашка прилипает к верху экрана, поле названия и кнопка переезжают в неё. Пока облако не ответило
+     (вход восстанавливается, тренировки ещё не пришли), молчим: иначе при загрузке плашка мигает */
+  const wkWarn = $('#wkWarn'), saveBar = $('#saveBar'), barHome = $('#barHome'), wkHome = $('#wkHome');
+  let cloudPending = true;
+  function cloudSettled() { if (!cloudPending) return; cloudPending = false; renderUnsaved(); }
+  setTimeout(cloudSettled, 6000);
   function unsavedState() {
+    if (cloudPending) return null;
     const sig = sigOf(S), a = activeWk();
     if (a) return sigOf(a) === sig ? null : { kind: 'edit', name: a.name };
     if (WK.some((w) => sigOf(w) === sig) || PRESETS.some((p) => p.sig === sig)) return null;
@@ -1507,17 +1519,14 @@ body.live .pill { display: none; }
   }
   function renderUnsaved() {
     const u = unsavedState();
-    wkWarn.hidden = !u; unsavedPill.hidden = !u;
+    saveBar.hidden = !u;
     wkEmpty.hidden = !!u || WK.length > 0;
     wkSaveBtn.classList.toggle('attn', !!u);
     if (u && flashTimer) { clearTimeout(flashTimer); flashTimer = 0; renderSaveLabel(); }
+    const home = u ? barHome : wkHome;
+    if (wkForm.parentNode !== home) home.appendChild(wkForm);
     if (u) wkWarn.textContent = u.kind === 'edit' ? t('unsavedEdit', { name: u.name }) : t(user && cloudMod ? 'unsavedNewCloud' : 'unsavedNew');
   }
-  unsavedPill.addEventListener('click', () => {
-    wkForm.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    const u = unsavedState();
-    if (u && u.kind === 'new') wkName.focus({ preventScroll: true }); else wkSaveBtn.focus({ preventScroll: true });
-  });
   function loadWorkout(id) {
     const w = WK.find((x) => x.id === id);
     if (!w) return;
@@ -1579,19 +1588,22 @@ body.live .pill { display: none; }
   function handleUser(u) {
     user = u; syncErr = false;
     if (u) {
+      cloudPending = true;
+      setTimeout(cloudSettled, 6000);
       const local = readLocalWk();
       WK = local;
       if (local.length) cloudMod.importWorkouts(local).then(() => writeLocalWk([])).catch(cloudFail);
       if (authDlg.open) authDlg.close();
     } else {
       WK = readLocalWk();
+      cloudPending = false;
     }
     renderAccount(); renderWorkouts();
   }
   function handleCloudWorkouts(list) {
     if (!user) return;
     WK = list.map(normWk).filter(Boolean);
-    syncErr = false;
+    syncErr = false; cloudPending = false;
     renderWorkouts();
   }
   acctBtn.addEventListener('click', () => {
@@ -1631,13 +1643,13 @@ body.live .pill { display: none; }
     try { await cloudMod.signOut(); authDlg.close(); } catch (e) { authError(e); }
   });
   async function startCloud() {
-    if (!hasManifest) return;
+    if (!hasManifest) { cloudSettled(); return; }
     let m = null;
-    try { m = await import('./cloud.js'); } catch (e) { return; }
-    if (!m.enabled) return;
+    try { m = await import('./cloud.js'); } catch (e) { cloudSettled(); return; }
+    if (!m.enabled) { cloudSettled(); return; }
     cloudMod = m;
     try { await m.start({ onUser: handleUser, onWorkouts: handleCloudWorkouts, onError: cloudFail, lang }); }
-    catch (e) { cloudMod = null; }
+    catch (e) { cloudMod = null; cloudSettled(); }
     renderAccount(); renderWorkouts();
   }
   WK = readLocalWk();

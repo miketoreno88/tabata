@@ -13,8 +13,8 @@ const results = [];
 const errors = [];
 const check = (name, ok, extra) => results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? ` (${extra})` : ''}`);
 const rowNames = (p) => p.$$eval('.wk-open b', (els) => els.map((e) => e.textContent));
-const warnShown = (p) => p.$eval('#wkWarn', (e) => !e.hidden);
-const pillShown = (p) => p.$eval('#unsavedPill', (e) => !e.hidden);
+const warnShown = (p) => p.$eval('#saveBar', (e) => !e.hidden);
+const formInBar = (p) => p.$eval('#wkSave', (f) => f.closest('#saveBar') !== null);
 const watch = (p, tag) => {
   p.on('pageerror', (e) => errors.push(`${tag} pageerror: ${e.message}`));
   p.on('console', (m) => { if (m.type() === 'error') errors.push(`${tag} console: ${m.text().slice(0, 160)}`); });
@@ -46,15 +46,21 @@ async function rest(url, opts) {
     // Устройство A: тренировка до входа, регистрация, перенос в аккаунт
     const A = await device(browser, 'A');
     check('кнопка "Войти" в шапке', (await A.p.textContent('#acctBtn')) === 'Войти');
-    check('готовый набор: подсказки "не сохранено" нет', !(await warnShown(A.p)) && !(await pillShown(A.p)));
+    await A.p.waitForTimeout(1500);
+    check('готовый набор: плашки "не сохранено" нет', !(await warnShown(A.p)));
     await A.p.fill('#cw-0', '0:50');
     await A.p.press('#cw-0', 'Enter');
+    await A.p.waitForFunction(() => !document.querySelector('#saveBar').hidden, null, { timeout: 8000 }).catch(() => {});
     const w1 = await A.p.textContent('#wkWarn');
-    check('изменил круги: подсказка и значок на табло', (await warnShown(A.p)) && (await pillShown(A.p)) && w1.startsWith('Круги не сохранены'), w1);
+    check('изменил круги: плашка сверху, в ней поле и кнопка', (await warnShown(A.p)) && (await formInBar(A.p)) && w1.startsWith('Круги не сохранены'), w1);
+    await A.p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const barTop = await A.p.$eval('#saveBar', (e) => Math.round(e.getBoundingClientRect().top));
+    check('плашка видна и после прокрутки вниз', barTop >= 0 && barTop < 40, 'top ' + barTop);
+    await A.p.evaluate(() => window.scrollTo(0, 0));
     await A.p.fill('#wkName', 'До входа');
     await A.p.click('#wkSaveBtn');
     check('сохранение без входа (в браузере)', (await rowNames(A.p)).join() === 'До входа');
-    check('после сохранения подсказка исчезла', !(await warnShown(A.p)) && !(await pillShown(A.p)));
+    check('после сохранения плашка исчезла, форма вернулась в список', !(await warnShown(A.p)) && !(await formInBar(A.p)));
     await signIn(A.p, email, pass, true);
     await A.p.waitForFunction(() => document.querySelector('#acctBtn').classList.contains('in'), null, { timeout: 20000 });
     check('регистрация по почте: в шапке почта', (await A.p.textContent('#acctBtn')) === email);
@@ -74,9 +80,18 @@ async function rest(url, opts) {
     check('изменил открытую тренировку: "Изменения в Ноги не сохранены"', (await warnShown(A.p)) && w2.includes('"Ноги"'), w2);
     check('кнопка стала "Обновить"', (await A.p.textContent('#wkSaveBtn')) === 'Обновить');
     await A.p.click('#wkSaveBtn');
-    await A.p.waitForFunction(() => document.querySelector('#wkWarn').hidden, null, { timeout: 5000 })
+    await A.p.waitForFunction(() => document.querySelector('#saveBar').hidden, null, { timeout: 5000 })
       .then(() => check('после "Обновить" подсказка исчезла', true))
       .catch(() => check('после "Обновить" подсказка исчезла', false));
+    await A.ctx.addInitScript(() => {
+      window.__barShown = false;
+      const timer = setInterval(() => { const b = document.getElementById('saveBar'); if (b && !b.hidden) window.__barShown = true; }, 16);
+      setTimeout(() => clearInterval(timer), 6000);
+    });
+    await A.p.waitForTimeout(2000); // запись успевает уйти в облако, как у живого человека
+    await A.p.reload();
+    await A.p.waitForTimeout(5000);
+    check('перезагрузка с сохранённой тренировкой: плашка не мигает', !(await A.p.evaluate(() => window.__barShown)));
 
     // Устройство B: вход тем же аккаунтом, видны обе тренировки
     const B = await device(browser, 'B');
