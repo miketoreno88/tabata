@@ -957,11 +957,40 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   const totalOf = (p) => p.reduce((a, it) => a + it.dur, 0);
 
   /* Звук */
-  let ac = null;
+  let ac = null, silentEl = null;
   function audio() {
     if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
-    if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+    keepPlaybackSession();
+    /* iOS после блокировки экрана или смены приложения ставит звук на паузу ("interrupted"), возобновляем */
+    if (ac && ac.state !== 'running') ac.resume().catch(() => {});
     return ac;
+  }
+  /* iPhone глушит звук сайта переключателем "Без звука". Режим "воспроизведение" (как у плеера) играет и в нём:
+     iOS 17+ умеет navigator.audioSession, на старых iOS тот же режим включает беззвучный звук, играющий по кругу */
+  function keepPlaybackSession() {
+    if (navigator.audioSession) {
+      try { if (navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { /* ничего */ }
+      return;
+    }
+    const iosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!iosDevice) return;
+    if (!silentEl) {
+      silentEl = new Audio(silentWavUrl());
+      silentEl.loop = true;
+      silentEl.setAttribute('playsinline', '');
+    }
+    if (silentEl.paused) silentEl.play().catch(() => {});
+  }
+  function silentWavUrl() {
+    const rate = 8000, n = 800; // 0,1 с тишины, 8 бит
+    const buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    const str = (o, x) => { for (let i = 0; i < x.length; i++) v.setUint8(o + i, x.charCodeAt(i)); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVE'); str(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    str(36, 'data'); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
   /* Квадратная волна + октава выше на почти полной громкости: резкий сигнал, слышно поверх музыки */
   function beep(freq, dur, when) {
@@ -1426,7 +1455,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     if (e.code === 'Space' && !isTyping(e.target)) e.preventDefault();
   }, true);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && state === 'running') { requestWake(); tick(); }
+    if (document.visibilityState !== 'visible') return;
+    if (ac && ac.state !== 'running') ac.resume().catch(() => {});
+    if (state === 'running') { requestWake(); tick(); }
   });
 
   /* Приложение на экране Домой: кнопка там, где браузер умеет ставить (Android, Chrome), подсказка на iPhone; офлайн через sw.js */
