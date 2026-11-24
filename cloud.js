@@ -4,6 +4,8 @@ import { firebaseConfig } from './firebase-config.js';
 
 const BASE = 'https://www.gstatic.com/firebasejs/10.14.1/';
 let fb = null, auth = null, db = null, uid = null, unsubWk = null;
+/* На своём компьютере (localhost) сайт работает с локальными эмуляторами Firebase, а не с настоящим проектом */
+const LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 export const enabled = !!(firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId);
 
@@ -15,12 +17,14 @@ export async function start({ onUser, onWorkouts, onError, lang }) {
   fb = Object.assign({}, ...mods);
   const app = fb.initializeApp(firebaseConfig);
   auth = fb.getAuth(app);
+  if (LOCAL) fb.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   if (lang) auth.languageCode = lang;
   try {
     db = fb.initializeFirestore(app, { localCache: fb.persistentLocalCache({ tabManager: fb.persistentMultipleTabManager() }) });
   } catch (e) {
     db = fb.getFirestore(app);
   }
+  if (LOCAL) fb.connectFirestoreEmulator(db, '127.0.0.1', 8080);
   fb.getRedirectResult(auth).catch((e) => onError(e));
   fb.onAuthStateChanged(auth, (u) => {
     if (unsubWk) { unsubWk(); unsubWk = null; }

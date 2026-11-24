@@ -32,3 +32,15 @@ npx firebase-tools deploy --only hosting,firestore:rules
 ```
 
 GitHub Pages остаётся только ради перенаправления со старого адреса.
+
+## Проверка на своём компьютере
+
+На `localhost` сайт сам подключается к локальным эмуляторам Firebase (вход и база), настоящий проект не трогается.
+Нужна Java 21 (`brew install openjdk@21`).
+
+```
+JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH" \
+  npx firebase-tools emulators:start --only auth,firestore,hosting
+# в другом терминале: сквозной тест (регистрация, два устройства, удаление, правила базы, вход через Google)
+PLAYWRIGHT_PATH=/opt/homebrew/lib/node_modules/@playwright/cli/node_modules/playwright node tests/e2e.js
+```
