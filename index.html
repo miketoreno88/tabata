@@ -223,7 +223,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 .handle {
   display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 4px; border: 0; border-radius: 8px;
   background: transparent; color: var(--fg); cursor: grab;
-  touch-action: none; user-select: none; -webkit-user-select: none;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .handle:hover, .crow.dragging .handle { background: var(--hover); }
 .grip {
@@ -1444,7 +1444,8 @@ body:not(.live) #soundBtnLive { display: none; }
       const prev = row.previousElementSibling, next = row.nextElementSibling;
       const top0 = row.offsetTop;
       if (next && mid > next.getBoundingClientRect().top + next.offsetHeight / 2) listEl.insertBefore(next, row);
-      else if (prev && mid < prev.getBoundingClientRect().top + prev.offsetHeight / 2) listEl.insertBefore(row, prev);
+      // сосед сверху уходит под строку; саму строку в DOM не двигаем, иначе браузер теряет захват пальца
+      else if (prev && mid < prev.getBoundingClientRect().top + prev.offsetHeight / 2) listEl.insertBefore(prev, row.nextSibling);
       else break;
       d.shift += row.offsetTop - top0;
       d.moved = true;
@@ -1464,8 +1465,16 @@ body:not(.live) #soundBtnLive { display: none; }
     }
     drag.raf = requestAnimationFrame(autoScroll);
   }
+  /* Движение слушаем на всём окне: даже если браузер потеряет захват, перетаскивание идёт до отпускания пальца */
+  function dragMove(e) { if (!drag || e.pointerId !== drag.id) return; drag.y = e.clientY; follow(); }
+  function dragEnd(e) { if (drag && e.pointerId === drag.id) endDrag(); }
+  function noTouchScroll(e) { if (drag) e.preventDefault(); }
   function endDrag() {
     const d = drag; drag = null;
+    window.removeEventListener('pointermove', dragMove);
+    window.removeEventListener('pointerup', dragEnd);
+    window.removeEventListener('pointercancel', dragEnd);
+    document.removeEventListener('touchmove', noTouchScroll);
     cancelAnimationFrame(d.raf);
     d.row.classList.remove('dragging'); listEl.classList.remove('sorting');
     d.row.style.transform = '';
@@ -1482,16 +1491,11 @@ body:not(.live) #soundBtnLive { display: none; }
       drag = { row, id: e.pointerId, y: e.clientY, startY: e.clientY + window.scrollY, shift: 0, moved: false, raf: 0 };
       row.classList.add('dragging'); listEl.classList.add('sorting');
       drag.raf = requestAnimationFrame(autoScroll);
+      window.addEventListener('pointermove', dragMove);
+      window.addEventListener('pointerup', dragEnd);
+      window.addEventListener('pointercancel', dragEnd);
+      document.addEventListener('touchmove', noTouchScroll, { passive: false });
     });
-    h.addEventListener('pointermove', (e) => {
-      if (!drag || e.pointerId !== drag.id) return;
-      drag.y = e.clientY;
-      follow();
-    });
-    const end = (e) => { if (drag && e.pointerId === drag.id) endDrag(); };
-    h.addEventListener('pointerup', end);
-    h.addEventListener('pointercancel', end);
-    h.addEventListener('lostpointercapture', end);
   }
 
   /* Готовые наборы */

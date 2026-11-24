@@ -44,3 +44,10 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH="/opt/homebrew/opt/openjdk@21/bin:$P
 # в другом терминале: сквозной тест (регистрация, два устройства, удаление, правила базы, вход через Google)
 PLAYWRIGHT_PATH=/opt/homebrew/lib/node_modules/@playwright/cli/node_modules/playwright node tests/e2e.js
 ```
+
+Перетаскивание кругов (мышь и палец) проверяется без Firebase:
+
+```
+python3 -m http.server 5051 --bind 127.0.0.1   # в другом терминале
+PLAYWRIGHT_PATH=/opt/homebrew/lib/node_modules/@playwright/cli/node_modules/playwright node tests/drag.js
+```
