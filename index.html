@@ -311,10 +311,55 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
 /* Вход */
 .acct {
-  max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
-  font: 600 13px var(--text); color: var(--surface); background: var(--fg); border: 1px solid var(--fg); border-radius: 999px; padding: 6px 14px;
+  width: 40px; height: 40px; padding: 0; flex: none; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--fg);
 }
-.acct.in { color: var(--fg); background: var(--surface); border-color: var(--line); }
+.acct:hover { border-color: var(--muted); }
+.acct.in { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+.ini { font-family: var(--display); font-weight: 800; font-size: 19px; line-height: 1; }
+/* Боковое меню справа */
+.drawer {
+  margin: 0 0 0 auto; width: min(400px, calc(100vw - 40px)); height: 100%; max-height: 100%; box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(18px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 18px) 18px;
+  border: 0; border-left: 1px solid var(--line); border-radius: 20px 0 0 20px; background: var(--surface); color: var(--fg);
+}
+.drawer[open] { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; animation: drawer-in .22s ease-out; }
+@keyframes drawer-in { from { transform: translateX(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+.drawer::backdrop { background: var(--scrim); }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.drawer-head h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
+.drawer .auth-x { position: static; }
+.acct-card {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 8px 12px;
+  padding: 12px; border: 1px solid var(--line); border-radius: 14px;
+}
+.acct-ava {
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--hover); color: var(--fg);
+}
+.acct-ava.in { background: var(--fg); color: var(--surface); }
+.acct-info { display: flex; flex-direction: column; min-width: 0; }
+.acct-info b, .acct-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-info b { font-weight: 600; }
+.acct-info span { font-size: 13px; color: var(--muted); }
+.acct-info span:empty { display: none; }
+.acct-card .a-primary, .acct-card .a-secondary { flex: none; padding: 8px 14px; font-size: 14px; }
+.acct-why { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
+.sect { border-top: 1px solid var(--line); }
+.sect summary {
+  display: flex; align-items: center; gap: 10px; padding: 14px 2px; cursor: pointer; list-style: none;
+  font-family: var(--display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: .06em;
+}
+.sect summary::-webkit-details-marker { display: none; }
+.sect summary small { font-family: var(--text); font-weight: 600; font-size: 13px; color: var(--muted); letter-spacing: 0; }
+.sect summary::after {
+  content: ""; margin-left: auto; width: 8px; height: 8px; margin-right: 4px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .2s;
+}
+.sect[open] summary::after { transform: rotate(-135deg); }
+.sect summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+.sect > :not(summary) { margin-bottom: 16px; }
+.drawer .install-hint { border-top: 0; padding-top: 0; }
 .auth {
   width: min(400px, calc(100vw - 32px)); box-sizing: border-box; padding: 24px 22px 18px;
   border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--fg);
@@ -373,7 +418,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     <div class="top-side">
       <p id="total">15:10 · 8 кругов</p>
       <select class="lang" id="langSel" data-i-aria="language" aria-label="Язык"></select>
-      <button class="acct" id="acctBtn" type="button" hidden>Войти</button>
+      <button class="acct" id="acctBtn" type="button" data-i-aria="openMenu" aria-label="Открыть меню: аккаунт и тренировки"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></button>
     </div>
   </header>
 
@@ -403,20 +448,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     </section>
 
     <aside class="panel" id="panel">
-      <h2 data-i="myWorkouts">Мои тренировки</h2>
-      <div class="wk">
-        <div class="wk-list" id="wkList"></div>
-        <p class="wk-note" id="wkEmpty" data-i="wkEmpty">Сохраните текущий список кругов, чтобы потом открыть его одним нажатием.</p>
-        <div id="wkHome">
-        <form class="wk-save" id="wkSave">
-          <input id="wkName" type="text" maxlength="60" autocomplete="off" spellcheck="false" data-i-ph="wkNamePh" data-i-aria="wkNamePh" placeholder="Название, например Ноги" aria-label="Название, например Ноги">
-          <button type="submit" id="wkSaveBtn">Сохранить</button>
-        </form>
-        </div>
-        <p class="wk-note" id="wkSync">Хранятся в этом браузере.</p>
-      </div>
-      <h2 data-i="presets">Готовые</h2>
-      <div class="presets" id="presets"></div>
       <h2 data-i="rounds">Круги</h2>
       <div class="plan">
         <div id="fPrep"></div>
@@ -431,10 +462,42 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <p class="list-hint" data-i="dragHint">Круг можно перетащить за номер выше или ниже.</p>
         <div id="fCool"></div>
       </div>
-      <p class="install-hint" id="iosHint" data-i="iosHint" hidden>Чтобы таймер был на экране Домой как приложение: в Safari нажмите Поделиться, затем "На экран Домой".</p>
     </aside>
   </main>
 </div>
+
+<dialog class="drawer" id="drawer" aria-labelledby="drawerTitle">
+  <div class="drawer-head">
+    <h2 id="drawerTitle" data-i="menu">Меню</h2>
+    <button class="auth-x" id="drawerClose" type="button" data-i-aria="close" aria-label="Закрыть">×</button>
+  </div>
+  <section class="acct-card" id="acctCard" hidden>
+    <div class="acct-ava" id="acctAva"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div>
+    <div class="acct-info"><b id="acctName">Вы не вошли</b><span id="acctMail"></span></div>
+    <button class="a-primary" id="drawerSignIn" type="button" data-i="signIn">Войти</button>
+    <button class="a-secondary" id="signOutBtn" type="button" data-i="signOut" hidden>Выйти</button>
+    <p class="acct-why" id="acctWhy" data-i="wkLocal">Войдите, чтобы сохранять тренировки и открывать их на всех устройствах.</p>
+  </section>
+  <details class="sect" id="sectWk">
+    <summary><span data-i="myWorkouts">Мои тренировки</span><small id="wkCount"></small></summary>
+    <div class="wk">
+      <div class="wk-list" id="wkList"></div>
+      <p class="wk-note" id="wkEmpty" data-i="wkEmpty">Сохраните текущий список кругов, чтобы потом открыть его одним нажатием.</p>
+      <div id="wkHome">
+      <form class="wk-save" id="wkSave">
+        <input id="wkName" type="text" maxlength="60" autocomplete="off" spellcheck="false" data-i-ph="wkNamePh" data-i-aria="wkNamePh" placeholder="Название, например Ноги" aria-label="Название, например Ноги">
+        <button type="submit" id="wkSaveBtn">Сохранить</button>
+      </form>
+      </div>
+      <p class="wk-note" id="wkSync">Хранятся в этом браузере.</p>
+    </div>
+  </details>
+  <details class="sect" id="sectPresets">
+    <summary><span data-i="presets">Готовые</span></summary>
+    <div class="presets" id="presets"></div>
+  </details>
+  <p class="install-hint" id="iosHint" data-i="iosHint" hidden>Чтобы таймер был на экране Домой как приложение: в Safari нажмите Поделиться, затем "На экран Домой".</p>
+</dialog>
 
 <dialog class="auth" id="authDlg" aria-labelledby="authTitle">
   <button class="auth-x" id="authClose" type="button" data-i-aria="close" aria-label="Закрыть">×</button>
@@ -457,11 +520,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       </div>
       <button class="a-link" type="button" id="forgotBtn" data-i="forgot">Забыли пароль?</button>
     </form>
-  </div>
-  <div class="auth-view" id="authIn" hidden>
-    <h3 data-i="account">Аккаунт</h3>
-    <p class="auth-who" id="authWho"></p>
-    <button class="a-secondary" type="button" id="signOutBtn" data-i="signOut">Выйти</button>
   </div>
   <p class="auth-msg" id="authMsg" role="status"></p>
   <p class="auth-note" data-i="privacy">Аккаунт и тренировки хранятся в Google Firebase.</p>
@@ -857,6 +915,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     ja: { signInToSave: 'ログインして保存', unsavedSignIn: 'ラウンドは保存されていません。保存するにはログインしてください。', wkLocal: 'ログインすると、トレーニングを保存してすべてのデバイスで開けます。', signInToSaveWhy: 'ログインすると "{name}" がアカウントに保存されます。' },
   };
   for (const code of Object.keys(I18N_SIGNIN)) Object.assign(I18N[code], I18N_SIGNIN[code]);
+  /* Боковое меню */
+  const I18N_MENU = {
+    en: { menu: 'Menu', openMenu: 'Open menu: account and workouts', guest: 'Not signed in' },
+    ru: { menu: 'Меню', openMenu: 'Открыть меню: аккаунт и тренировки', guest: 'Вы не вошли' },
+    es: { menu: 'Menú', openMenu: 'Abrir menú: cuenta y entrenamientos', guest: 'No has iniciado sesión' },
+    de: { menu: 'Menü', openMenu: 'Menü öffnen: Konto und Trainings', guest: 'Nicht angemeldet' },
+    fr: { menu: 'Menu', openMenu: 'Ouvrir le menu : compte et entraînements', guest: 'Non connecté' },
+    pt: { menu: 'Menu', openMenu: 'Abrir menu: conta e treinos', guest: 'Não conectado' },
+    it: { menu: 'Menu', openMenu: 'Apri menu: account e allenamenti', guest: 'Accesso non effettuato' },
+    tr: { menu: 'Menü', openMenu: 'Menüyü aç: hesap ve antrenmanlar', guest: 'Giriş yapılmadı' },
+    zh: { menu: '菜单', openMenu: '打开菜单：账号和训练', guest: '未登录' },
+    ja: { menu: 'メニュー', openMenu: 'メニューを開く：アカウントとトレーニング', guest: '未ログイン' },
+  };
+  for (const code of Object.keys(I18N_MENU)) Object.assign(I18N[code], I18N_MENU[code]);
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   let lang = 'en', dict = I18N.en, plurals = null, chosenLang = null;
   function t(key, vars) {
@@ -1410,7 +1482,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'preset' + (p.wide ? ' wide' : '');
     b.innerHTML = '<b></b><span></span>';
-    b.addEventListener('click', () => { S = p.v(); activeId = null; wkName.value = ''; listDirty = true; save(); settingsChanged(); renderWorkouts(); });
+    b.addEventListener('click', () => { S = p.v(); activeId = null; wkName.value = ''; listDirty = true; save(); settingsChanged(); renderWorkouts(); closeDrawer(); });
     p.el = b; p.sig = sigOf(p.v());
     presetsEl.appendChild(b);
   }
@@ -1463,7 +1535,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
   function isTyping(el) { return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT'); }
   window.addEventListener('keydown', (e) => {
-    if (e.code !== 'Space' || isTyping(e.target) || authDlg.open) return;
+    if (e.code !== 'Space' || isTyping(e.target) || document.querySelector('dialog[open]')) return;
     e.preventDefault();
     if (e.repeat) return;
     state === 'running' ? pause() : start();
@@ -1556,6 +1628,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       wkList.appendChild(row);
     }
     wkEmpty.hidden = items.length > 0;
+    $('#wkCount').textContent = items.length ? String(items.length) : '';
     wkSync.classList.toggle('err', syncErr);
     wkSync.textContent = syncErr ? t('errSync')
       : !cloudMod ? t('wkDevice') : user ? t('wkCloud', { email: user.email || user.name }) : t('wkLocal');
@@ -1590,7 +1663,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const w = WK.find((x) => x.id === id);
     if (!w) return;
     S = snap(w); activeId = id; wkName.value = w.name;
-    listDirty = true; save(); settingsChanged(); renderWorkouts();
+    listDirty = true; save(); settingsChanged(); renderWorkouts(); closeDrawer();
   }
   wkForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1643,13 +1716,18 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   }
   function setBusy(b) { authDlg.classList.toggle('busy', b); }
   function renderAccount() {
-    acctBtn.hidden = !cloudMod;
-    if (!cloudMod) return;
-    acctBtn.textContent = user ? (user.name || user.email || t('account')) : t('signIn');
-    acctBtn.classList.toggle('in', !!user);
-    $('#authOut').hidden = !!user;
-    $('#authIn').hidden = !user;
-    if (user) $('#authWho').textContent = t('signedInAs', { email: user.email || user.name });
+    const ini = user ? (user.name || user.email || '?').trim().charAt(0).toUpperCase() : '';
+    [acctBtn, $('#acctAva')].forEach((el) => {
+      el.classList.toggle('in', !!user);
+      if (user) { el.textContent = ''; const sp = document.createElement('span'); sp.className = 'ini'; sp.textContent = ini; el.appendChild(sp); }
+      else if (!el.querySelector('svg')) el.innerHTML = PERSON_SVG;
+    });
+    $('#acctCard').hidden = !cloudMod;
+    $('#acctName').textContent = user ? (user.name || user.email) : t('guest');
+    $('#acctMail').textContent = user && user.name ? user.email : '';
+    $('#acctWhy').hidden = !!user;
+    $('#drawerSignIn').hidden = !!user;
+    $('#signOutBtn').hidden = !user;
   }
   function handleUser(u) {
     user = u; syncErr = false;
@@ -1678,7 +1756,30 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     $('#authWhy').textContent = saveName ? t('signInToSaveWhy', { name: saveName }) : t('signInWhy');
     try { authDlg.showModal(); } catch (e) { authDlg.setAttribute('open', ''); }
   }
-  acctBtn.addEventListener('click', () => { if (!user) setPending(null); openAuth(null); });
+  /* Боковое меню: аккаунт, Мои тренировки и Готовые (свёрнуты, раскрытие запоминается) */
+  const drawer = $('#drawer');
+  const PERSON_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+  function openDrawer() { try { drawer.showModal(); } catch (e) { drawer.setAttribute('open', ''); } }
+  function closeDrawer() { if (drawer.open) drawer.close(); }
+  acctBtn.addEventListener('click', openDrawer);
+  $('#drawerClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', (e) => {
+    if (e.target !== drawer) return;
+    const r = drawer.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDrawer();
+  });
+  const SKEY = 'tabata-sections';
+  try {
+    const open = JSON.parse(localStorage.getItem(SKEY) || '{}');
+    if (open.wk) $('#sectWk').open = true;
+    if (open.presets) $('#sectPresets').open = true;
+  } catch (e) { /* по умолчанию свёрнуты */ }
+  ['sectWk', 'sectPresets'].forEach((id) => {
+    $('#' + id).addEventListener('toggle', () => {
+      try { localStorage.setItem(SKEY, JSON.stringify({ wk: $('#sectWk').open, presets: $('#sectPresets').open })); } catch (e) { /* ничего */ }
+    });
+  });
+  $('#drawerSignIn').addEventListener('click', () => { setPending(null); openAuth(null); });
   /* Закрыли окно, не войдя: сохранение через вход отменяется */
   authDlg.addEventListener('close', () => { if (!user) setPending(null); });
   $('#authClose').addEventListener('click', () => authDlg.close());
@@ -1711,7 +1812,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     catch (e) { authError(e); } finally { setBusy(false); }
   });
   $('#signOutBtn').addEventListener('click', async () => {
-    try { await cloudMod.signOut(); authDlg.close(); } catch (e) { authError(e); }
+    try { await cloudMod.signOut(); } catch (e) { authError(e); }
   });
   async function startCloud() {
     if (!hasManifest) { cloudSettled(); return; }

@@ -24,11 +24,17 @@ async function device(browser, tag) {
   const p = await ctx.newPage();
   watch(p, tag);
   await p.goto(BASE);
-  await p.waitForFunction(() => !document.querySelector('#acctBtn').hidden, null, { timeout: 20000 });
+  await p.waitForFunction(() => !document.querySelector('#acctCard').hidden, null, { timeout: 20000 });
   return { ctx, p };
 }
+async function openSect(p, id) {
+  if (!(await p.evaluate(() => document.querySelector('#drawer').open))) await p.click('#acctBtn');
+  if (!(await p.evaluate((x) => document.getElementById(x).open, id))) await p.click(`#${id} summary`);
+}
+const closeMenu = (p) => p.evaluate(() => { const d = document.querySelector('#drawer'); if (d.open) d.close(); });
 async function signIn(p, mail, pw, create) {
   await p.click('#acctBtn');
+  await p.click('#drawerSignIn');
   await p.fill('#authEmail', mail);
   await p.fill('#authPass', pw);
   await p.click(create ? '#emailUp' : '#emailIn');
@@ -45,7 +51,12 @@ async function rest(url, opts) {
   try {
     // Устройство A: тренировка до входа, регистрация, перенос в аккаунт
     const A = await device(browser, 'A');
-    check('кнопка "Войти" в шапке', (await A.p.textContent('#acctBtn')) === 'Войти');
+    check('значок аккаунта в шапке: не вошёл', !(await A.p.$eval('#acctBtn', (e) => e.classList.contains('in'))) && !!(await A.p.$('#acctBtn svg')));
+    await A.p.click('#acctBtn');
+    const sects = await A.p.evaluate(() => [document.querySelector('#sectWk').open, document.querySelector('#sectPresets').open]);
+    check('меню: "Мои тренировки" и "Готовые" свёрнуты', !sects[0] && !sects[1]);
+    check('меню: карточка "Вы не вошли" и кнопка "Войти"', (await A.p.textContent('#acctName')) === 'Вы не вошли' && (await A.p.isVisible('#drawerSignIn')));
+    await A.p.keyboard.press('Escape');
     await A.p.waitForTimeout(1500);
     check('готовый набор: плашки "не сохранено" нет', !(await warnShown(A.p)));
     await A.p.fill('#cw-0', '0:50');
@@ -66,7 +77,7 @@ async function rest(url, opts) {
     await A.p.fill('#authPass', pass);
     await A.p.click('#emailUp');
     await A.p.waitForFunction(() => document.querySelector('#acctBtn').classList.contains('in'), null, { timeout: 20000 });
-    check('регистрация по почте: в шапке почта', (await A.p.textContent('#acctBtn')) === email);
+    check('после входа: в значке буква, в меню почта', (await A.p.textContent('#acctBtn')) === email.charAt(0).toUpperCase() && (await A.p.textContent('#acctName')) === email);
     check('окно входа закрылось само', !(await A.p.evaluate(() => document.querySelector('#authDlg').open)));
     await A.p.waitForFunction(() => document.querySelector('#wkSync').textContent.includes('аккаунте'), null, { timeout: 10000 });
     check('подпись "Хранятся в аккаунте …"', true);
@@ -74,11 +85,16 @@ async function rest(url, opts) {
       .then(() => check('после входа тренировка "До входа" сохранилась сама', true))
       .catch(() => check('после входа тренировка "До входа" сохранилась сама', false));
     check('после сохранения плашка исчезла, форма вернулась в список', !(await warnShown(A.p)) && !(await formInBar(A.p)));
+    await openSect(A.p, 'sectPresets');
     await A.p.locator('.preset').nth(1).click(); // Табата 20/10 × 8 = 4:00
+    check('выбрал готовый набор: меню закрылось', !(await A.p.evaluate(() => document.querySelector('#drawer').open)));
+    await openSect(A.p, 'sectWk');
     await A.p.fill('#wkName', 'Ноги');
     await A.p.click('#wkSaveBtn');
     await A.p.waitForFunction(() => [...document.querySelectorAll('.wk-open b')].some((b) => b.textContent === 'Ноги'), null, { timeout: 10000 });
     check('сохранение в аккаунт: "Ноги"', true);
+    check('в заголовке "Мои тренировки" число 2', (await A.p.textContent('#wkCount')) === '2');
+    await closeMenu(A.p);
     await A.p.fill('#cr-6', '0:45');
     await A.p.press('#cr-6', 'Enter');
     const w2 = await A.p.textContent('#wkWarn');
@@ -105,11 +121,13 @@ async function rest(url, opts) {
     await B.p.waitForFunction(() => document.querySelectorAll('.wk-row').length >= 2, null, { timeout: 20000 });
     const namesB = (await rowNames(B.p)).sort().join(', ');
     check('B после входа видит тренировки A', namesB === 'До входа, Ноги', namesB);
+    await openSect(B.p, 'sectWk');
     await B.p.locator('.wk-open', { hasText: 'Ноги' }).click();
     const clockB = await B.p.textContent('#clock');
     const roundsB = await B.p.$$eval('.crow', (r) => r.length);
     check('B открыл обновлённую "Ноги": 8 кругов, 4:35', clockB === '4:35' && roundsB === 8, `${clockB}, ${roundsB} кругов`);
     check('B: открытая тренировка без подсказки', !(await warnShown(B.p)));
+    await openSect(B.p, 'sectWk');
     const del = B.p.locator('.wk-row', { hasText: 'До входа' }).locator('.wk-del');
     await del.click();
     check('удаление спрашивает подтверждение', (await del.textContent()) === 'Удалить?');
@@ -158,6 +176,7 @@ async function rest(url, opts) {
     try {
       const D = await device(browser, 'D');
       await D.p.click('#acctBtn');
+      await D.p.click('#drawerSignIn');
       const [popup] = await Promise.all([D.ctx.waitForEvent('page', { timeout: 10000 }), D.p.click('#googleBtn')]);
       await popup.waitForLoadState();
       await popup.getByText('Add new account').click();
