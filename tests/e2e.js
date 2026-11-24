@@ -88,6 +88,8 @@ async function rest(url, opts) {
     await openSect(A.p, 'sectPresets');
     await A.p.locator('.preset').nth(1).click(); // Табата 20/10 × 8 = 4:00
     check('выбрал готовый набор: меню закрылось', !(await A.p.evaluate(() => document.querySelector('#drawer').open)));
+    const nameA = await A.p.textContent('#phase');
+    check('на табло название набора "Табата" и "8 кругов" рядом со временем', nameA === 'Табата' && (await A.p.textContent('#clockSub')) === '8 кругов', nameA);
     await openSect(A.p, 'sectWk');
     await A.p.fill('#wkName', 'Ноги');
     await A.p.click('#wkSaveBtn');
@@ -127,6 +129,7 @@ async function rest(url, opts) {
     const roundsB = await B.p.$$eval('.crow', (r) => r.length);
     check('B открыл обновлённую "Ноги": 8 кругов, 4:35', clockB === '4:35' && roundsB === 8, `${clockB}, ${roundsB} кругов`);
     check('B: открытая тренировка без подсказки', !(await warnShown(B.p)));
+    check('B: на табло название "Ноги", строки "Работа … отдых" нет', (await B.p.textContent('#phase')) === 'Ноги' && !(await B.p.isVisible('#nextInfo')));
     await openSect(B.p, 'sectWk');
     const del = B.p.locator('.wk-row', { hasText: 'До входа' }).locator('.wk-del');
     await del.click();

@@ -368,6 +368,11 @@ body:not(.live) #soundBtnLive { display: none; }
 .drawer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; font-weight: 500; }
 
 /* До старта и после финиша табло показывает сводку тренировки, а не саму тренировку: всё мельче */
+.clock-line { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 0 12px; }
+.clock-sub { font-family: var(--display); font-weight: 600; font-size: 20px; opacity: .72; font-variant-numeric: tabular-nums; }
+.clock-sub:empty { display: none; }
+.stage[data-phase="idle"] .meta, .stage[data-phase="done"] .meta { display: none; }
+.stage[data-phase="idle"] .phase, .stage[data-phase="done"] .phase { min-width: 0; overflow-wrap: anywhere; }
 .stage[data-phase="idle"], .stage[data-phase="done"] { gap: 12px; padding: 14px 18px 18px; }
 .stage[data-phase="idle"] .phase, .stage[data-phase="done"] .phase { font-size: 18px; }
 .stage[data-phase="idle"] .clock-wrap, .stage[data-phase="done"] .clock-wrap { padding-block: 0; }
@@ -446,7 +451,7 @@ body:not(.live) #soundBtnLive { display: none; }
           <button class="tool" id="installBtn" type="button" data-i="install" hidden>Установить</button>
         </div>
       </div>
-      <div class="clock-wrap"><div class="clock" id="clock" role="timer">15:10</div></div>
+      <div class="clock-wrap"><div class="clock-line"><div class="clock" id="clock" role="timer">15:10</div><span class="clock-sub" id="clockSub">8 кругов</span></div></div>
       <div class="meta" aria-live="polite">
         <span id="roundInfo">8 кругов</span>
         <span id="nextInfo" class="dim">Работа 1:00 · отдых 1:00</span>
@@ -1137,7 +1142,7 @@ body:not(.live) #soundBtnLive { display: none; }
   function releaseWake() { try { if (wake) wake.release(); } catch (e) { /* ничего */ } wake = null; }
 
   /* Состояние */
-  const stage = $('#stage'), phaseEl = $('#phase'), clock = $('#clock');
+  const stage = $('#stage'), phaseEl = $('#phase'), clock = $('#clock'), clockSub = $('#clockSub');
   const roundInfo = $('#roundInfo'), nextInfo = $('#nextInfo'), leftInfo = $('#leftInfo');
   const startBtn = $('#startBtn'), skipBtn = $('#skipBtn'), stopBtn = $('#stopBtn');
   const timeline = $('#timeline');
@@ -1238,14 +1243,16 @@ body:not(.live) #soundBtnLive { display: none; }
       }
     });
   }
-  function range(vals) {
-    const a = Math.min.apply(null, vals), b = Math.max.apply(null, vals);
-    return a === b ? mmss(a) : t('range', { a: mmss(a), b: mmss(b) });
-  }
-  function summary(s) {
-    const works = range(s.list.map((it) => it.w));
-    const rests = s.list.slice(0, -1).map((it) => it.r);
-    return rests.length ? t('summary', { w: works, r: range(rests) }) : t('summaryNoRest', { w: works });
+  /* Название на табло: открытая тренировка, иначе сохранённая или готовый набор с теми же кругами, иначе "Тренировка" */
+  function workoutName() {
+    const a = activeWk();
+    if (a) return a.name;
+    const sig = sigOf(S);
+    const w = WK.find((x) => sigOf(x) === sig);
+    if (w) return w.name;
+    const p = PRESETS.find((x) => x.sig === sig);
+    if (p) return p.nameKey ? t(p.nameKey) : p.name;
+    return t('workout');
   }
   function render() {
     const live = state === 'running' || state === 'paused';
@@ -1257,17 +1264,19 @@ body:not(.live) #soundBtnLive { display: none; }
 
     if (state === 'idle') {
       stage.dataset.phase = 'idle';
-      phaseEl.textContent = t('workout');
+      phaseEl.textContent = workoutName();
       clock.textContent = mmss(totalOf(plan));
-      roundInfo.textContent = roundsText(S.list.length);
-      nextInfo.textContent = summary(S);
+      clockSub.textContent = roundsText(S.list.length);
+      roundInfo.textContent = '';
+      nextInfo.textContent = '';
       leftInfo.textContent = '';
       startBtn.textContent = t('start');
     } else if (state === 'done') {
       stage.dataset.phase = 'done';
       phaseEl.textContent = t('done');
       clock.textContent = mmss(totalOf(plan));
-      roundInfo.textContent = t('roundsDone', { rounds: roundsText(R.list.length) });
+      clockSub.textContent = t('roundsDone', { rounds: roundsText(R.list.length) });
+      roundInfo.textContent = '';
       nextInfo.textContent = '';
       leftInfo.textContent = '';
       startBtn.textContent = t('again');
@@ -1276,6 +1285,7 @@ body:not(.live) #soundBtnLive { display: none; }
       stage.dataset.phase = it.type;
       phaseEl.textContent = (state === 'paused' ? t('paused') + ' · ' : '') + phase(it.type);
       clock.textContent = big(Math.ceil(remainMs / 1000));
+      clockSub.textContent = '';
       if (it.type === 'work' || it.type === 'rest') roundInfo.textContent = t('roundOf', { i: it.round, n: n });
       else if (it.type === 'prep') roundInfo.textContent = t('ahead', { rounds: roundsText(n) });
       else roundInfo.textContent = t('allDone');
@@ -1662,6 +1672,7 @@ body:not(.live) #soundBtnLive { display: none; }
       : !cloudMod ? t('wkDevice') : user ? t('wkCloud', { email: user.email || user.name }) : t('wkLocal');
     renderSaveLabel();
     renderUnsaved();
+    if (state === 'idle' || state === 'done') render();
   }
   /* Не сохранено: круги изменены и не совпадают ни с открытой тренировкой, ни с сохранённой, ни с готовым набором.
      Плашка прилипает к верху экрана, поле названия и кнопка переезжают в неё. Пока облако не ответило
