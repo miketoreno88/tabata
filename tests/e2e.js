@@ -13,6 +13,8 @@ const results = [];
 const errors = [];
 const check = (name, ok, extra) => results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? ` (${extra})` : ''}`);
 const rowNames = (p) => p.$$eval('.wk-open b', (els) => els.map((e) => e.textContent));
+const warnShown = (p) => p.$eval('#wkWarn', (e) => !e.hidden);
+const pillShown = (p) => p.$eval('#unsavedPill', (e) => !e.hidden);
 const watch = (p, tag) => {
   p.on('pageerror', (e) => errors.push(`${tag} pageerror: ${e.message}`));
   p.on('console', (m) => { if (m.type() === 'error') errors.push(`${tag} console: ${m.text().slice(0, 160)}`); });
@@ -44,9 +46,15 @@ async function rest(url, opts) {
     // Устройство A: тренировка до входа, регистрация, перенос в аккаунт
     const A = await device(browser, 'A');
     check('кнопка "Войти" в шапке', (await A.p.textContent('#acctBtn')) === 'Войти');
+    check('готовый набор: подсказки "не сохранено" нет', !(await warnShown(A.p)) && !(await pillShown(A.p)));
+    await A.p.fill('#cw-0', '0:50');
+    await A.p.press('#cw-0', 'Enter');
+    const w1 = await A.p.textContent('#wkWarn');
+    check('изменил круги: подсказка и значок на табло', (await warnShown(A.p)) && (await pillShown(A.p)) && w1.startsWith('Круги не сохранены'), w1);
     await A.p.fill('#wkName', 'До входа');
     await A.p.click('#wkSaveBtn');
     check('сохранение без входа (в браузере)', (await rowNames(A.p)).join() === 'До входа');
+    check('после сохранения подсказка исчезла', !(await warnShown(A.p)) && !(await pillShown(A.p)));
     await signIn(A.p, email, pass, true);
     await A.p.waitForFunction(() => document.querySelector('#acctBtn').classList.contains('in'), null, { timeout: 20000 });
     check('регистрация по почте: в шапке почта', (await A.p.textContent('#acctBtn')) === email);
@@ -60,6 +68,15 @@ async function rest(url, opts) {
     await A.p.click('#wkSaveBtn');
     await A.p.waitForFunction(() => [...document.querySelectorAll('.wk-open b')].some((b) => b.textContent === 'Ноги'), null, { timeout: 10000 });
     check('сохранение в аккаунт: "Ноги"', true);
+    await A.p.fill('#cr-6', '0:45');
+    await A.p.press('#cr-6', 'Enter');
+    const w2 = await A.p.textContent('#wkWarn');
+    check('изменил открытую тренировку: "Изменения в Ноги не сохранены"', (await warnShown(A.p)) && w2.includes('"Ноги"'), w2);
+    check('кнопка стала "Обновить"', (await A.p.textContent('#wkSaveBtn')) === 'Обновить');
+    await A.p.click('#wkSaveBtn');
+    await A.p.waitForFunction(() => document.querySelector('#wkWarn').hidden, null, { timeout: 5000 })
+      .then(() => check('после "Обновить" подсказка исчезла', true))
+      .catch(() => check('после "Обновить" подсказка исчезла', false));
 
     // Устройство B: вход тем же аккаунтом, видны обе тренировки
     const B = await device(browser, 'B');
@@ -71,7 +88,8 @@ async function rest(url, opts) {
     await B.p.locator('.wk-open', { hasText: 'Ноги' }).click();
     const clockB = await B.p.textContent('#clock');
     const roundsB = await B.p.$$eval('.crow', (r) => r.length);
-    check('B открыл "Ноги": 8 кругов, 4:00', clockB === '4:00' && roundsB === 8, `${clockB}, ${roundsB} кругов`);
+    check('B открыл обновлённую "Ноги": 8 кругов, 4:35', clockB === '4:35' && roundsB === 8, `${clockB}, ${roundsB} кругов`);
+    check('B: открытая тренировка без подсказки', !(await warnShown(B.p)));
     const del = B.p.locator('.wk-row', { hasText: 'До входа' }).locator('.wk-del');
     await del.click();
     check('удаление спрашивает подтверждение', (await del.textContent()) === 'Удалить?');

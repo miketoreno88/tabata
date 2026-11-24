@@ -38,6 +38,7 @@ body { margin: 0; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; }
   --hover: #F1F4F7;
   --shadow: rgb(20 24 29 / .18);
   --scrim: rgb(20 24 29 / .45);
+  --warn: #FCEFD3;
   --work: #D93A3F;
   --rest: #2364D2;
   --prep: #E89B0C;
@@ -51,14 +52,14 @@ body { margin: 0; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0F1215; --surface: #181D22; --fg: #E6EAEE; --muted: #95A1AC; --line: #29313A; --hover: #20262C;
-    --shadow: rgb(0 0 0 / .55); --scrim: rgb(0 0 0 / .6);
+    --shadow: rgb(0 0 0 / .55); --scrim: rgb(0 0 0 / .6); --warn: #3A2D12;
     --work: #DE4449; --rest: #2F6FDC; --prep: #F0A51A; --cool: #7A5ED6; --done: #2A975A;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0F1215; --surface: #181D22; --fg: #E6EAEE; --muted: #95A1AC; --line: #29313A; --hover: #20262C;
-  --shadow: rgb(0 0 0 / .55); --scrim: rgb(0 0 0 / .6);
+  --shadow: rgb(0 0 0 / .55); --scrim: rgb(0 0 0 / .6); --warn: #3A2D12;
   --work: #DE4449; --rest: #2F6FDC; --prep: #F0A51A; --cool: #7A5ED6; --done: #2A975A;
   color-scheme: dark;
 }
@@ -292,6 +293,14 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   font: 600 15px var(--text); cursor: pointer;
 }
 .wk-note { margin: 0; font-size: 13px; color: var(--muted); }
+.wk-warn { margin: 0; padding: 9px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; color: var(--fg); background: var(--warn); }
+.wk-save button.attn { background: var(--prep); color: var(--on-prep); }
+.stage-title { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; min-width: 0; }
+.pill {
+  font: 600 12px var(--text); letter-spacing: .02em; padding: 5px 10px; border: 0; border-radius: 999px;
+  background: var(--prep); color: var(--on-prep); cursor: pointer;
+}
+body.live .pill { display: none; }
 .wk-note.err { color: var(--work); }
 
 /* Вход */
@@ -361,7 +370,10 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   <main class="main">
     <section class="stage" id="stage" data-phase="idle" data-i-aria="timer" aria-label="Таймер">
       <div class="stage-top">
-        <span class="phase" id="phase">Тренировка</span>
+        <div class="stage-title">
+          <span class="phase" id="phase">Тренировка</span>
+          <button class="pill" id="unsavedPill" type="button" data-i="unsavedPill" hidden>Не сохранено</button>
+        </div>
         <div class="tools">
           <button class="tool" id="soundBtn" type="button" aria-pressed="true">Звук: громко</button>
           <button class="tool" id="fsBtn" type="button">Весь экран</button>
@@ -388,6 +400,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       <div class="wk">
         <div class="wk-list" id="wkList"></div>
         <p class="wk-note" id="wkEmpty" data-i="wkEmpty">Сохраните текущий список кругов, чтобы потом открыть его одним нажатием.</p>
+        <p class="wk-warn" id="wkWarn" role="status" hidden></p>
         <form class="wk-save" id="wkSave">
           <input id="wkName" type="text" maxlength="60" autocomplete="off" spellcheck="false" data-i-ph="wkNamePh" data-i-aria="wkNamePh" placeholder="Название, например Ноги" aria-label="Название, например Ноги">
           <button type="submit" id="wkSaveBtn">Сохранить</button>
@@ -808,6 +821,20 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     },
   };
   for (const code of Object.keys(I18N_CLOUD)) Object.assign(I18N[code], I18N_CLOUD[code]);
+  /* Подсказка "не сохранено" */
+  const I18N_UNSAVED = {
+    en: { unsavedNew: 'These rounds aren’t saved. Enter a name and tap "Save" so you don’t lose them.', unsavedNewCloud: 'These rounds aren’t saved. Enter a name and tap "Save" to have them on all your devices.', unsavedEdit: 'Changes to "{name}" aren’t saved. Tap "Update".', unsavedPill: 'Not saved' },
+    ru: { unsavedNew: 'Круги не сохранены. Введите название и нажмите "Сохранить", чтобы не потерять их.', unsavedNewCloud: 'Круги не сохранены. Введите название и нажмите "Сохранить", чтобы они были на всех ваших устройствах.', unsavedEdit: 'Изменения в "{name}" не сохранены. Нажмите "Обновить".', unsavedPill: 'Не сохранено' },
+    es: { unsavedNew: 'Estas rondas no están guardadas. Escribe un nombre y pulsa "Guardar" para no perderlas.', unsavedNewCloud: 'Estas rondas no están guardadas. Escribe un nombre y pulsa "Guardar" para tenerlas en todos tus dispositivos.', unsavedEdit: 'Los cambios en "{name}" no están guardados. Pulsa "Actualizar".', unsavedPill: 'Sin guardar' },
+    de: { unsavedNew: 'Diese Runden sind nicht gespeichert. Gib einen Namen ein und tippe auf "Speichern", damit sie nicht verloren gehen.', unsavedNewCloud: 'Diese Runden sind nicht gespeichert. Gib einen Namen ein und tippe auf "Speichern", um sie auf allen Geräten zu haben.', unsavedEdit: 'Änderungen an "{name}" sind nicht gespeichert. Tippe auf "Aktualisieren".', unsavedPill: 'Nicht gespeichert' },
+    fr: { unsavedNew: 'Ces tours ne sont pas enregistrés. Saisissez un nom et touchez "Enregistrer" pour ne pas les perdre.', unsavedNewCloud: 'Ces tours ne sont pas enregistrés. Saisissez un nom et touchez "Enregistrer" pour les retrouver sur tous vos appareils.', unsavedEdit: 'Les modifications de "{name}" ne sont pas enregistrées. Touchez "Mettre à jour".', unsavedPill: 'Non enregistré' },
+    pt: { unsavedNew: 'Estas rodadas não estão salvas. Digite um nome e toque em "Salvar" para não perdê-las.', unsavedNewCloud: 'Estas rodadas não estão salvas. Digite um nome e toque em "Salvar" para tê-las em todos os seus dispositivos.', unsavedEdit: 'As alterações em "{name}" não estão salvas. Toque em "Atualizar".', unsavedPill: 'Não salvo' },
+    it: { unsavedNew: 'Questi round non sono salvati. Inserisci un nome e tocca "Salva" per non perderli.', unsavedNewCloud: 'Questi round non sono salvati. Inserisci un nome e tocca "Salva" per averli su tutti i dispositivi.', unsavedEdit: 'Le modifiche a "{name}" non sono salvate. Tocca "Aggiorna".', unsavedPill: 'Non salvato' },
+    tr: { unsavedNew: 'Bu turlar kaydedilmedi. Kaybolmaması için bir ad girip "Kaydet"e dokunun.', unsavedNewCloud: 'Bu turlar kaydedilmedi. Tüm cihazlarınızda olması için bir ad girip "Kaydet"e dokunun.', unsavedEdit: '"{name}" üzerindeki değişiklikler kaydedilmedi. "Güncelle"ye dokunun.', unsavedPill: 'Kaydedilmedi' },
+    zh: { unsavedNew: '这些轮次尚未保存。输入名称并点击"保存"，以免丢失。', unsavedNewCloud: '这些轮次尚未保存。输入名称并点击"保存"，即可在所有设备上使用。', unsavedEdit: '对"{name}"的更改尚未保存。请点击"更新"。', unsavedPill: '未保存' },
+    ja: { unsavedNew: 'このラウンドは保存されていません。失わないように、名前を入力して"保存"を押してください。', unsavedNewCloud: 'このラウンドは保存されていません。すべてのデバイスで使うには、名前を入力して"保存"を押してください。', unsavedEdit: '"{name}" の変更は保存されていません。"更新"を押してください。', unsavedPill: '未保存' },
+  };
+  for (const code of Object.keys(I18N_UNSAVED)) Object.assign(I18N[code], I18N_UNSAVED[code]);
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   let lang = 'en', dict = I18N.en, plurals = null, chosenLang = null;
   function t(key, vars) {
@@ -1353,6 +1380,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       if (state === 'done') state = 'idle';
       plan = p; buildTimeline(plan); render();
     }
+    renderUnsaved();
   }
 
   /* Кнопки */
@@ -1467,7 +1495,29 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     wkSync.textContent = syncErr ? t('errSync')
       : !cloudMod ? t('wkDevice') : user ? t('wkCloud', { email: user.email || user.name }) : t('wkLocal');
     renderSaveLabel();
+    renderUnsaved();
   }
+  /* Не сохранено: круги изменены и не совпадают ни с открытой тренировкой, ни с сохранённой, ни с готовым набором */
+  const wkWarn = $('#wkWarn'), unsavedPill = $('#unsavedPill');
+  function unsavedState() {
+    const sig = sigOf(S), a = activeWk();
+    if (a) return sigOf(a) === sig ? null : { kind: 'edit', name: a.name };
+    if (WK.some((w) => sigOf(w) === sig) || PRESETS.some((p) => p.sig === sig)) return null;
+    return { kind: 'new' };
+  }
+  function renderUnsaved() {
+    const u = unsavedState();
+    wkWarn.hidden = !u; unsavedPill.hidden = !u;
+    wkEmpty.hidden = !!u || WK.length > 0;
+    wkSaveBtn.classList.toggle('attn', !!u);
+    if (u && flashTimer) { clearTimeout(flashTimer); flashTimer = 0; renderSaveLabel(); }
+    if (u) wkWarn.textContent = u.kind === 'edit' ? t('unsavedEdit', { name: u.name }) : t(user && cloudMod ? 'unsavedNewCloud' : 'unsavedNew');
+  }
+  unsavedPill.addEventListener('click', () => {
+    wkForm.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const u = unsavedState();
+    if (u && u.kind === 'new') wkName.focus({ preventScroll: true }); else wkSaveBtn.focus({ preventScroll: true });
+  });
   function loadWorkout(id) {
     const w = WK.find((x) => x.id === id);
     if (!w) return;
