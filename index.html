@@ -76,7 +76,7 @@ body { background: var(--bg); color: var(--fg); font-family: var(--text); font-s
 }
 body.live .app { max-width: none; height: 100%; }
 
-.top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
 .top h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
 .top p { margin: 0; color: var(--muted); font-size: 16px; font-variant-numeric: tabular-nums; }
 .top-side { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
@@ -360,6 +360,16 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .sect summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
 .sect > :not(summary) { margin-bottom: 16px; }
 .drawer .install-hint { border-top: 0; padding-top: 0; }
+.drawer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; font-weight: 500; }
+
+/* До старта и после финиша табло показывает сводку тренировки, а не саму тренировку: всё мельче */
+.stage[data-phase="idle"], .stage[data-phase="done"] { gap: 12px; padding: 14px 18px 18px; }
+.stage[data-phase="idle"] .phase, .stage[data-phase="done"] .phase { font-size: 18px; }
+.stage[data-phase="idle"] .clock-wrap, .stage[data-phase="done"] .clock-wrap { padding-block: 0; }
+.stage[data-phase="idle"] .clock, .stage[data-phase="done"] .clock { font-size: clamp(48px, 8vw, 80px); line-height: .9; }
+.stage[data-phase="idle"] .meta, .stage[data-phase="done"] .meta { font-size: 17px; gap: 2px 16px; }
+.stage[data-phase="idle"] .timeline { height: 16px; gap: 2px; }
+.stage[data-phase="idle"] .btn.primary, .stage[data-phase="done"] .btn.primary { padding-block: 9px; }
 .auth {
   width: min(400px, calc(100vw - 32px)); box-sizing: border-box; padding: 24px 22px 18px;
   border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--fg);
@@ -416,8 +426,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   <header class="top">
     <h1 data-i="appName">Табата</h1>
     <div class="top-side">
-      <p id="total">15:10 · 8 кругов</p>
-      <select class="lang" id="langSel" data-i-aria="language" aria-label="Язык"></select>
       <button class="acct" id="acctBtn" type="button" data-i-aria="openMenu" aria-label="Открыть меню: аккаунт и тренировки"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></button>
     </div>
   </header>
@@ -478,6 +486,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     <button class="a-secondary" id="signOutBtn" type="button" data-i="signOut" hidden>Выйти</button>
     <p class="acct-why" id="acctWhy" data-i="wkLocal">Войдите, чтобы сохранять тренировки и открывать их на всех устройствах.</p>
   </section>
+  <label class="drawer-row" for="langSel">
+    <span data-i="language">Язык</span>
+    <select class="lang" id="langSel"></select>
+  </label>
   <details class="sect" id="sectWk">
     <summary><span data-i="myWorkouts">Мои тренировки</span><small id="wkCount"></small></summary>
     <div class="wk">
@@ -1499,7 +1511,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const sig = sigOf(S);
     for (const p of PRESETS) p.el.setAttribute('aria-pressed', p.sig === sig ? 'true' : 'false');
     const p = buildPlan(S);
-    $('#total').textContent = t('total', { t: mmss(totalOf(p)), rounds: roundsText(S.list.length) });
     if (state === 'idle' || state === 'done') {
       if (state === 'done') state = 'idle';
       plan = p; buildTimeline(plan); render();
