@@ -864,6 +864,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   let S = PRESETS[0].v();
   const VOLUMES = [{ v: 1, key: 'soundLoud' }, { v: 0.35, key: 'soundQuiet' }, { v: 0, key: 'soundOff' }];
   let volIdx = 0, activeId = null;
+  let applyingRemote = false, pushTimer = 0, pendingRemote = null, currentSeen = false;
   function num(v, d, a, b) { return Number.isFinite(v) ? clamp(Math.round(v), a, b) : d; }
   function readState(o) {
     if (!o || !Array.isArray(o.list) || !o.list.length) return null;
@@ -909,6 +910,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     try {
       localStorage.setItem(KEY, JSON.stringify({ volIdx, lang: chosenLang, active: activeId, prepare: S.prepare, cool: S.cool, list: S.list }));
     } catch (e) { /* ничего */ }
+    pushCurrent();
   }
 
   function buildPlan(s) {
@@ -1010,10 +1012,12 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     state = 'done'; idx = plan.length; remainMs = 0; stopTicker(); releaseWake();
     beep(1400, 0.2, 0); beep(1400, 0.2, 0.3); beep(1900, 0.8, 0.6);
     render();
+    applyPendingRemote();
   }
   function reset() {
     state = 'idle'; idx = -1; stopTicker(); releaseWake();
     plan = buildPlan(S); buildTimeline(plan); render();
+    applyPendingRemote();
   }
   function skip() {
     if (idx + 1 >= plan.length) { finish(); return; }
@@ -1527,7 +1531,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     if (user) $('#authWho').textContent = t('signedInAs', { email: user.email || user.name });
   }
   function handleUser(u) {
-    user = u; syncErr = false;
+    user = u; syncErr = false; currentSeen = false; pendingRemote = null;
     if (u) {
       const local = readLocalWk();
       WK = local;
@@ -1537,6 +1541,43 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       WK = readLocalWk();
     }
     renderAccount(); renderWorkouts();
+  }
+  /* Текущие круги после входа одинаковы на всех устройствах: изменение уходит в облако через 0,7 с,
+     чужое применяется сразу (во время тренировки ждёт её конца или сброса) */
+  function pushCurrent() {
+    if (applyingRemote || !user || !cloudMod) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => {
+      if (!user || !cloudMod) return;
+      cloudMod.saveCurrent({ prepare: S.prepare, cool: S.cool, list: snap(S).list, active: activeId }).catch(cloudFail);
+    }, 700);
+  }
+  function applyRemote(cur) {
+    const st = readState(cur);
+    if (!st) return;
+    applyingRemote = true;
+    S = st;
+    activeId = typeof cur.active === 'string' ? cur.active : null;
+    const a = activeWk();
+    wkName.value = a ? a.name : '';
+    listDirty = true; save(); settingsChanged(); renderWorkouts();
+    applyingRemote = false;
+  }
+  function applyPendingRemote() {
+    if (!pendingRemote) return;
+    const c = pendingRemote; pendingRemote = null;
+    applyRemote(c);
+  }
+  function handleCurrent(cur) {
+    if (!user) return;
+    if (!cur) { if (!currentSeen) { currentSeen = true; pushCurrent(); } return; }
+    currentSeen = true;
+    const st = readState(cur);
+    if (!st) return;
+    const act = typeof cur.active === 'string' ? cur.active : null;
+    if (sigOf(st) === sigOf(S) && act === activeId) return;
+    if (state === 'running' || state === 'paused') { pendingRemote = cur; return; }
+    applyRemote(cur);
   }
   function handleCloudWorkouts(list) {
     if (!user) return;
@@ -1586,7 +1627,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     try { m = await import('./cloud.js'); } catch (e) { return; }
     if (!m.enabled) return;
     cloudMod = m;
-    try { await m.start({ onUser: handleUser, onWorkouts: handleCloudWorkouts, onError: cloudFail, lang }); }
+    try { await m.start({ onUser: handleUser, onWorkouts: handleCloudWorkouts, onCurrent: handleCurrent, onError: cloudFail, lang }); }
     catch (e) { cloudMod = null; }
     renderAccount(); renderWorkouts();
   }

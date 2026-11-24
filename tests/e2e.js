@@ -60,12 +60,22 @@ async function rest(url, opts) {
     await A.p.click('#wkSaveBtn');
     await A.p.waitForFunction(() => [...document.querySelectorAll('.wk-open b')].some((b) => b.textContent === 'Ноги'), null, { timeout: 10000 });
     check('сохранение в аккаунт: "Ноги"', true);
+    await A.p.fill('#cr-6', '0:45');
+    await A.p.press('#cr-6', 'Enter');
 
     // Устройство B: вход тем же аккаунтом, видны обе тренировки
     const B = await device(browser, 'B');
     check('B до входа: список пуст', (await rowNames(B.p)).length === 0);
     await signIn(B.p, email, pass, false);
     await B.p.waitForFunction(() => document.querySelectorAll('.wk-row').length >= 2, null, { timeout: 20000 });
+    await B.p.waitForFunction(() => { const i = document.querySelector('#cr-6'); return i && i.value === '0:45'; }, null, { timeout: 15000 })
+      .then(() => check('B после входа получил текущие круги A (отдых 7-го круга 0:45)', true))
+      .catch(async () => check('B после входа получил текущие круги A (отдых 7-го круга 0:45)', false, await B.p.inputValue('#cr-6')));
+    await B.p.fill('#cw-0', '0:30');
+    await B.p.press('#cw-0', 'Enter');
+    await A.p.waitForFunction(() => document.querySelector('#cw-0').value === '0:30', null, { timeout: 15000 })
+      .then(() => check('изменил круг на B, на A поменялось само', true))
+      .catch(async () => check('изменил круг на B, на A поменялось само', false, await A.p.inputValue('#cw-0')));
     const namesB = (await rowNames(B.p)).sort().join(', ');
     check('B после входа видит тренировки A', namesB === 'До входа, Ноги', namesB);
     await B.p.locator('.wk-open', { hasText: 'Ноги' }).click();
