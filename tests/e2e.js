@@ -52,23 +52,28 @@ async function rest(url, opts) {
     await A.p.press('#cw-0', 'Enter');
     await A.p.waitForFunction(() => !document.querySelector('#saveBar').hidden, null, { timeout: 8000 }).catch(() => {});
     const w1 = await A.p.textContent('#wkWarn');
-    check('изменил круги: плашка сверху, в ней поле и кнопка', (await warnShown(A.p)) && (await formInBar(A.p)) && w1.startsWith('Круги не сохранены'), w1);
+    check('без входа: плашка "Войдите, чтобы сохранить", в ней поле и кнопка', (await warnShown(A.p)) && (await formInBar(A.p)) && w1.includes('Войдите, чтобы сохранить'), w1);
+    check('без входа кнопка "Войти и сохранить"', (await A.p.textContent('#wkSaveBtn')) === 'Войти и сохранить');
     await A.p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const barTop = await A.p.$eval('#saveBar', (e) => Math.round(e.getBoundingClientRect().top));
     check('плашка видна и после прокрутки вниз', barTop >= 0 && barTop < 40, 'top ' + barTop);
     await A.p.evaluate(() => window.scrollTo(0, 0));
     await A.p.fill('#wkName', 'До входа');
     await A.p.click('#wkSaveBtn');
-    check('сохранение без входа (в браузере)', (await rowNames(A.p)).join() === 'До входа');
-    check('после сохранения плашка исчезла, форма вернулась в список', !(await warnShown(A.p)) && !(await formInBar(A.p)));
-    await signIn(A.p, email, pass, true);
+    const why = await A.p.textContent('#authWhy');
+    check('"Войти и сохранить" открыл вход с названием тренировки', (await A.p.evaluate(() => document.querySelector('#authDlg').open)) && why.includes('"До входа"'), why);
+    await A.p.fill('#authEmail', email);
+    await A.p.fill('#authPass', pass);
+    await A.p.click('#emailUp');
     await A.p.waitForFunction(() => document.querySelector('#acctBtn').classList.contains('in'), null, { timeout: 20000 });
     check('регистрация по почте: в шапке почта', (await A.p.textContent('#acctBtn')) === email);
     check('окно входа закрылось само', !(await A.p.evaluate(() => document.querySelector('#authDlg').open)));
     await A.p.waitForFunction(() => document.querySelector('#wkSync').textContent.includes('аккаунте'), null, { timeout: 10000 });
     check('подпись "Хранятся в аккаунте …"', true);
-    await A.p.waitForFunction(() => [...document.querySelectorAll('.wk-open b')].some((b) => b.textContent === 'До входа'), null, { timeout: 10000 });
-    check('тренировка "До входа" переехала в аккаунт', true);
+    await A.p.waitForFunction(() => [...document.querySelectorAll('.wk-open b')].some((b) => b.textContent === 'До входа'), null, { timeout: 10000 })
+      .then(() => check('после входа тренировка "До входа" сохранилась сама', true))
+      .catch(() => check('после входа тренировка "До входа" сохранилась сама', false));
+    check('после сохранения плашка исчезла, форма вернулась в список', !(await warnShown(A.p)) && !(await formInBar(A.p)));
     await A.p.locator('.preset').nth(1).click(); // Табата 20/10 × 8 = 4:00
     await A.p.fill('#wkName', 'Ноги');
     await A.p.click('#wkSaveBtn');
