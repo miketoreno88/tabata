@@ -165,6 +165,8 @@ body.live .meta { font-size: clamp(20px, 2.6vw, 30px); }
 .btn:disabled { opacity: .32; cursor: default; }
 button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 .hint { margin: 0; text-align: center; font-size: 13px; opacity: .65; }
+/* Подсказка про пробел только там, где есть клавиатура */
+@media (hover: none) and (pointer: coarse) { .hint { display: none; } }
 
 /* Панель настроек */
 .panel {
@@ -394,8 +396,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <div class="timeline" id="timeline" aria-hidden="true"></div>
       <div class="controls">
         <button class="btn primary" id="startBtn" type="button">Старт</button>
-        <button class="btn" id="skipBtn" type="button" data-i="skip" disabled>Пропустить</button>
-        <button class="btn" id="stopBtn" type="button" data-i="reset" disabled>Сброс</button>
+        <button class="btn" id="skipBtn" type="button" data-i="skip" hidden>Пропустить</button>
+        <button class="btn" id="stopBtn" type="button" data-i="reset" hidden>Сброс</button>
       </div>
       <p class="hint" data-i="spaceHint">Пробел: старт и пауза</p>
     </section>
@@ -1159,8 +1161,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const live = state === 'running' || state === 'paused';
     document.body.classList.toggle('live', live);
     stage.classList.toggle('paused', state === 'paused');
-    skipBtn.disabled = !live;
-    stopBtn.disabled = state === 'idle';
+    /* "Пропустить" и "Сброс" нужны только во время тренировки и на паузе */
+    skipBtn.hidden = !live;
+    stopBtn.hidden = !live;
 
     if (state === 'idle') {
       stage.dataset.phase = 'idle';
