@@ -1,7 +1,7 @@
 /* Работа без интернета: страница и файлы приложения сначала из сети (обновления приходят сразу),
    без сети или если сеть молчит 3 с, из кеша. Шрифты Google и библиотека Firebase из кеша, обновляются в фоне.
    Служебные адреса входа Firebase (/__/) и запросы к базе не трогаем. */
-const CACHE = 'tabata-v3';
+const CACHE = 'tabata-v4';
 const CORE = ['./', './cloud.js', './firebase-config.js', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 const START = new URL('./', self.registration.scope).pathname;
@@ -44,7 +44,7 @@ self.addEventListener('fetch', (e) => {
     if (req.mode === 'navigate' && !isStart) return;
     const key = isStart ? './' : req;
     e.respondWith(
-      withTimeout(fetch(req).then((res) => put(key, res)), 3000)
+      withTimeout(fetch(isStart ? new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : req).then((res) => put(key, res)), 3000)
         .catch(() => caches.match(key, { ignoreSearch: true }).then((hit) => hit || fetch(req)))
     );
   } else if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com'

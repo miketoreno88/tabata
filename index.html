@@ -27,7 +27,8 @@ body { margin: 0; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; }
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap">
-<style>
+<style id="app-css">
+/* Новые версии приходят сами: страница сверяет свой код с сайтом (checkUpdate) */
 /* Layout: табло (цвет фазы на всю панель + огромные цифры) рядом со списком кругов; во время тренировки табло на весь экран */
 :root {
   --bg: #EDF0F3;
@@ -548,7 +549,7 @@ body:not(.live) #soundBtnLive { display: none; }
   <p class="auth-note" data-i="privacy">Аккаунт и тренировки хранятся в Google Firebase.</p>
 </dialog>
 
-<script>
+<script id="app-js">
 (function () {
   const $ = (s) => document.querySelector(s);
 
@@ -1890,6 +1891,42 @@ body:not(.live) #soundBtnLive { display: none; }
     settingsChanged();
   }
   langSel.addEventListener('change', () => { chosenLang = langSel.value; applyLang(chosenLang); save(); });
+
+  /* Обновление: приложение на экране Домой iOS само страницу не перезагружает. Когда приложение снова на экране
+     и раз в 3 минуты сверяем свой код с сайтом; вышла новая версия, а тренировка не идёт, меню закрыто и никто
+     не печатает: тихо перезагружаем (круги и открытая тренировка сохранены в браузере) */
+  const appCode = (doc) => ['#app-css', '#app-js'].map((sel) => { const el = doc.querySelector(sel); return el ? el.textContent : ''; }).join('\n');
+  const OWN_CODE = appCode(document);
+  let updatePending = false, updateChecking = false;
+  function safeToReload() {
+    const a = document.activeElement;
+    return state === 'idle' && !drag && !document.querySelector('dialog[open]') && !(a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName));
+  }
+  async function checkUpdate() {
+    if (!hasManifest || location.protocol !== 'https:' || updateChecking) return;
+    updateChecking = true;
+    try {
+      if (!updatePending) {
+        const r = await fetch('./', { cache: 'no-store' });
+        if (r.ok) {
+          const code = appCode(new DOMParser().parseFromString(await r.text(), 'text/html'));
+          if (code.length > 1000 && code !== OWN_CODE) updatePending = true;
+        }
+      }
+      if (updatePending && safeToReload()) {
+        let last = 0;
+        try { last = Number(sessionStorage.getItem('tabata-reloaded')) || 0; } catch (e) { /* ничего */ }
+        if (Date.now() - last > 60000) {
+          try { sessionStorage.setItem('tabata-reloaded', String(Date.now())); } catch (e) { /* ничего */ }
+          location.reload();
+        }
+      }
+    } catch (e) { /* нет сети: проверим в следующий раз */ }
+    updateChecking = false;
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
+  setInterval(() => { if (document.visibilityState === 'visible') checkUpdate(); }, 3 * 60 * 1000);
+  setTimeout(checkUpdate, 5000);
 
   applyLang(chosenLang || detectLang());
   startCloud();
