@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Тренировка: имя, подготовка, заминка, круги; время изменения ставит сервер
+    function validWorkout(d) {
+      return d.keys().hasOnly(['name', 'prepare', 'cool', 'list', 'updatedAt'])
+        && d.keys().hasAll(['name', 'prepare', 'cool', 'list', 'updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && d.prepare is int && d.prepare >= 0 && d.prepare <= 600
+        && d.cool is int && d.cool >= 0 && d.cool <= 3600
+        && d.list is list && d.list.size() >= 1 && d.list.size() <= 99
+        && d.updatedAt == request.time;
+    }
+    // Каждый видит и меняет только свои тренировки
+    match /users/{uid}/workouts/{wid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid && validWorkout(request.resource.data);
+    }
+  }
+}

@@ -33,6 +33,7 @@ body { margin: 0; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; }
   --line: #D3DAE1;
   --hover: #F1F4F7;
   --shadow: rgb(20 24 29 / .18);
+  --scrim: rgb(20 24 29 / .45);
   --work: #D93A3F;
   --rest: #2364D2;
   --prep: #E89B0C;
@@ -46,14 +47,14 @@ body { margin: 0; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0F1215; --surface: #181D22; --fg: #E6EAEE; --muted: #95A1AC; --line: #29313A; --hover: #20262C;
-    --shadow: rgb(0 0 0 / .55);
+    --shadow: rgb(0 0 0 / .55); --scrim: rgb(0 0 0 / .6);
     --work: #DE4449; --rest: #2F6FDC; --prep: #F0A51A; --cool: #7A5ED6; --done: #2A975A;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0F1215; --surface: #181D22; --fg: #E6EAEE; --muted: #95A1AC; --line: #29313A; --hover: #20262C;
-  --shadow: rgb(0 0 0 / .55);
+  --shadow: rgb(0 0 0 / .55); --scrim: rgb(0 0 0 / .6);
   --work: #DE4449; --rest: #2F6FDC; --prep: #F0A51A; --cool: #7A5ED6; --done: #2A975A;
   color-scheme: dark;
 }
@@ -251,6 +252,90 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 .list-hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .install-hint { margin: 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
 
+/* Мои тренировки */
+.wk { display: flex; flex-direction: column; gap: 8px; }
+.wk-list { display: flex; flex-direction: column; }
+.wk-list:empty { display: none; }
+.wk-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; border-top: 1px solid var(--line); }
+.wk-row:first-child { border-top: 0; }
+.wk-open {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; padding: 8px 10px;
+  border: 0; border-radius: 10px; background: transparent; color: var(--fg); text-align: left; cursor: pointer; font: inherit;
+}
+.wk-open:hover, .wk-row.active .wk-open { background: var(--hover); }
+.wk-open b {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--display); font-weight: 700; font-size: 19px; line-height: 1.15;
+}
+.wk-row.active .wk-open b::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%;
+  background: var(--work); vertical-align: 2px;
+}
+.wk-open span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wk-del {
+  min-width: 34px; height: 34px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--muted); font: 500 20px/1 var(--text); cursor: pointer;
+}
+.wk-del:hover { color: var(--work); background: var(--hover); }
+.wk-del.confirm, .wk-del.confirm:hover { font-size: 13px; font-weight: 600; color: var(--on-flood); background: var(--work); }
+.wk-save { display: flex; gap: 8px; }
+.wk-save input {
+  flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: transparent; color: var(--fg); font: 16px var(--text);
+}
+.wk-save button {
+  flex: none; padding: 9px 14px; border: 0; border-radius: 10px; background: var(--fg); color: var(--surface);
+  font: 600 15px var(--text); cursor: pointer;
+}
+.wk-note { margin: 0; font-size: 13px; color: var(--muted); }
+.wk-note.err { color: var(--work); }
+
+/* Вход */
+.acct {
+  max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+  font: 600 13px var(--text); color: var(--surface); background: var(--fg); border: 1px solid var(--fg); border-radius: 999px; padding: 6px 14px;
+}
+.acct.in { color: var(--fg); background: var(--surface); border-color: var(--line); }
+.auth {
+  width: min(400px, calc(100vw - 32px)); box-sizing: border-box; padding: 24px 22px 18px;
+  border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--fg);
+}
+.auth[open] { display: flex; flex-direction: column; gap: 12px; }
+.auth::backdrop { background: var(--scrim); }
+.auth h3 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1; text-transform: uppercase; letter-spacing: .02em; }
+.auth-x {
+  position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
+}
+.auth-x:hover { background: var(--hover); }
+.auth-view { display: flex; flex-direction: column; gap: 12px; }
+.auth-why, .auth-who { margin: 0; font-size: 14px; color: var(--muted); }
+.auth-note { margin: 0; font-size: 12px; color: var(--muted); }
+.g-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px; padding: 11px 14px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--fg); font: 600 15px var(--text);
+}
+.g-btn:hover { background: var(--hover); }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-form { display: flex; flex-direction: column; gap: 6px; }
+.auth-form label { margin-top: 4px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.auth-form input {
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--fg); font: 16px var(--text);
+}
+.auth-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.a-primary, .a-secondary { flex: 1 1 auto; padding: 10px 14px; border-radius: 12px; font: 600 15px var(--text); cursor: pointer; }
+.a-primary { border: 1px solid var(--fg); background: var(--fg); color: var(--surface); }
+.a-secondary { border: 1px solid var(--line); background: transparent; color: var(--fg); }
+.a-link {
+  align-self: flex-start; padding: 4px 0; border: 0; background: transparent; color: var(--muted);
+  font: 500 13px var(--text); text-decoration: underline; cursor: pointer;
+}
+.auth-msg { margin: 0; font-size: 14px; }
+.auth-msg:empty { display: none; }
+.auth.busy button { opacity: .6; pointer-events: none; }
+.wk-save input:focus-visible, .auth-form input:focus-visible { outline: 2px solid var(--fg); outline-offset: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   .stage, .clock { transition: none; }
   .clock.beat { animation: none; }
@@ -265,6 +350,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     <div class="top-side">
       <p id="total">15:10 · 8 кругов</p>
       <select class="lang" id="langSel" data-i-aria="language" aria-label="Язык"></select>
+      <button class="acct" id="acctBtn" type="button" hidden>Войти</button>
     </div>
   </header>
 
@@ -294,6 +380,16 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     </section>
 
     <aside class="panel" id="panel">
+      <h2 data-i="myWorkouts">Мои тренировки</h2>
+      <div class="wk">
+        <div class="wk-list" id="wkList"></div>
+        <p class="wk-note" id="wkEmpty" data-i="wkEmpty">Сохраните текущий список кругов, чтобы потом открыть его одним нажатием.</p>
+        <form class="wk-save" id="wkSave">
+          <input id="wkName" type="text" maxlength="60" autocomplete="off" spellcheck="false" data-i-ph="wkNamePh" data-i-aria="wkNamePh" placeholder="Название, например Ноги" aria-label="Название, например Ноги">
+          <button type="submit" id="wkSaveBtn">Сохранить</button>
+        </form>
+        <p class="wk-note" id="wkSync">Хранятся в этом браузере.</p>
+      </div>
       <h2 data-i="presets">Готовые</h2>
       <div class="presets" id="presets"></div>
       <h2 data-i="rounds">Круги</h2>
@@ -314,6 +410,37 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     </aside>
   </main>
 </div>
+
+<dialog class="auth" id="authDlg" aria-labelledby="authTitle">
+  <button class="auth-x" id="authClose" type="button" data-i-aria="close" aria-label="Закрыть">×</button>
+  <div class="auth-view" id="authOut">
+    <h3 id="authTitle" data-i="signInTitle">Вход</h3>
+    <p class="auth-why" data-i="signInWhy">Войдите, и тренировки будут храниться в аккаунте и появятся на всех ваших устройствах.</p>
+    <button class="g-btn" id="googleBtn" type="button">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      <span data-i="google">Войти через Google</span>
+    </button>
+    <div class="or"><span data-i="or">или</span></div>
+    <form class="auth-form" id="emailForm" novalidate>
+      <label for="authEmail" data-i="email">Почта</label>
+      <input id="authEmail" type="email" autocomplete="email" inputmode="email" spellcheck="false">
+      <label for="authPass" data-i="password">Пароль</label>
+      <input id="authPass" type="password" autocomplete="current-password">
+      <div class="auth-btns">
+        <button class="a-primary" type="submit" id="emailIn" data-i="signInBtn">Войти</button>
+        <button class="a-secondary" type="button" id="emailUp" data-i="signUpBtn">Создать аккаунт</button>
+      </div>
+      <button class="a-link" type="button" id="forgotBtn" data-i="forgot">Забыли пароль?</button>
+    </form>
+  </div>
+  <div class="auth-view" id="authIn" hidden>
+    <h3 data-i="account">Аккаунт</h3>
+    <p class="auth-who" id="authWho"></p>
+    <button class="a-secondary" type="button" id="signOutBtn" data-i="signOut">Выйти</button>
+  </div>
+  <p class="auth-msg" id="authMsg" role="status"></p>
+  <p class="auth-note" data-i="privacy">Аккаунт и тренировки хранятся в Google Firebase.</p>
+</dialog>
 
 <script>
 (function () {
@@ -533,6 +660,150 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
       presetTabata: 'タバタ', presetTabata3: 'タバタ × 3', presetDefaultSub: '× 8、デフォルト', presetTabata3Sub: '3 × 8、間に 1:00',
     },
   };
+  /* Строки для тренировок и входа */
+  const I18N_CLOUD = {
+    en: {
+      myWorkouts: 'My workouts', wkEmpty: 'Save the current list of rounds to open it later with one tap.', wkNamePh: 'Name, e.g. Legs',
+      save: 'Save', update: 'Update', saved: 'Saved', deleteQ: 'Delete?', deleteWk: 'Delete workout {name}',
+      wkLocal: 'Stored in this browser. Sign in to have them on all your devices.', wkCloud: 'Stored in {email} and available on all your devices.',
+      wkDevice: 'Stored in this browser.', errSync: 'Cloud sync failed. Try reloading the page.',
+      signIn: 'Sign in', account: 'Account', close: 'Close', signInTitle: 'Sign in',
+      signInWhy: 'Sign in to keep your workouts in your account and on all your devices.', google: 'Continue with Google', or: 'or',
+      email: 'Email', password: 'Password', signInBtn: 'Sign in', signUpBtn: 'Create account', forgot: 'Forgot password?',
+      resetSent: 'We sent a password reset email to {email}.', needEmail: 'Enter your email.', signedInAs: 'Signed in as {email}.', signOut: 'Sign out',
+      errCreds: 'Wrong email or password.', errExists: 'An account with this email already exists. Tap "Sign in".',
+      errWeak: 'The password must be at least 6 characters.', errEmail: 'Check the email address.',
+      errNetwork: 'Can’t reach the server. Check your connection and try again.', errMany: 'Too many attempts. Try again in a few minutes.',
+      errGeneric: 'Something went wrong. Please try again.', privacy: 'Your account and workouts are stored in Google Firebase.',
+    },
+    ru: {
+      myWorkouts: 'Мои тренировки', wkEmpty: 'Сохраните текущий список кругов, чтобы потом открыть его одним нажатием.', wkNamePh: 'Название, например Ноги',
+      save: 'Сохранить', update: 'Обновить', saved: 'Сохранено', deleteQ: 'Удалить?', deleteWk: 'Удалить тренировку {name}',
+      wkLocal: 'Хранятся в этом браузере. Войдите, чтобы они были на всех ваших устройствах.', wkCloud: 'Хранятся в аккаунте {email} и видны на всех ваших устройствах.',
+      wkDevice: 'Хранятся в этом браузере.', errSync: 'Не получилось синхронизировать с облаком. Обновите страницу.',
+      signIn: 'Войти', account: 'Аккаунт', close: 'Закрыть', signInTitle: 'Вход',
+      signInWhy: 'Войдите, и тренировки будут храниться в аккаунте и появятся на всех ваших устройствах.', google: 'Войти через Google', or: 'или',
+      email: 'Почта', password: 'Пароль', signInBtn: 'Войти', signUpBtn: 'Создать аккаунт', forgot: 'Забыли пароль?',
+      resetSent: 'Отправили письмо для смены пароля на {email}.', needEmail: 'Введите почту.', signedInAs: 'Вы вошли как {email}.', signOut: 'Выйти',
+      errCreds: 'Неверная почта или пароль.', errExists: 'Аккаунт с этой почтой уже есть. Нажмите "Войти".',
+      errWeak: 'Пароль должен быть не короче 6 символов.', errEmail: 'Проверьте адрес почты.',
+      errNetwork: 'Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.', errMany: 'Слишком много попыток. Попробуйте через несколько минут.',
+      errGeneric: 'Не получилось. Попробуйте ещё раз.', privacy: 'Аккаунт и тренировки хранятся в Google Firebase.',
+    },
+    es: {
+      myWorkouts: 'Mis entrenamientos', wkEmpty: 'Guarda la lista de rondas actual para abrirla luego con un toque.', wkNamePh: 'Nombre, p. ej. Piernas',
+      save: 'Guardar', update: 'Actualizar', saved: 'Guardado', deleteQ: '¿Eliminar?', deleteWk: 'Eliminar entrenamiento {name}',
+      wkLocal: 'Guardados en este navegador. Inicia sesión para tenerlos en todos tus dispositivos.', wkCloud: 'Guardados en {email} y disponibles en todos tus dispositivos.',
+      wkDevice: 'Guardados en este navegador.', errSync: 'Error al sincronizar con la nube. Recarga la página.',
+      signIn: 'Iniciar sesión', account: 'Cuenta', close: 'Cerrar', signInTitle: 'Iniciar sesión',
+      signInWhy: 'Inicia sesión para guardar tus entrenamientos en tu cuenta y tenerlos en todos tus dispositivos.', google: 'Continuar con Google', or: 'o',
+      email: 'Correo', password: 'Contraseña', signInBtn: 'Entrar', signUpBtn: 'Crear cuenta', forgot: '¿Olvidaste la contraseña?',
+      resetSent: 'Hemos enviado un correo para restablecer la contraseña a {email}.', needEmail: 'Introduce tu correo.', signedInAs: 'Sesión iniciada como {email}.', signOut: 'Cerrar sesión',
+      errCreds: 'Correo o contraseña incorrectos.', errExists: 'Ya existe una cuenta con este correo. Pulsa "Entrar".',
+      errWeak: 'La contraseña debe tener al menos 6 caracteres.', errEmail: 'Revisa la dirección de correo.',
+      errNetwork: 'No hay conexión con el servidor. Revisa internet e inténtalo de nuevo.', errMany: 'Demasiados intentos. Inténtalo en unos minutos.',
+      errGeneric: 'Algo salió mal. Inténtalo de nuevo.', privacy: 'Tu cuenta y tus entrenamientos se guardan en Google Firebase.',
+    },
+    de: {
+      myWorkouts: 'Meine Trainings', wkEmpty: 'Speichere die aktuelle Rundenliste, um sie später mit einem Tipp zu öffnen.', wkNamePh: 'Name, z. B. Beine',
+      save: 'Speichern', update: 'Aktualisieren', saved: 'Gespeichert', deleteQ: 'Löschen?', deleteWk: 'Training {name} löschen',
+      wkLocal: 'In diesem Browser gespeichert. Melde dich an, um sie auf allen Geräten zu haben.', wkCloud: 'Im Konto {email} gespeichert und auf allen deinen Geräten verfügbar.',
+      wkDevice: 'In diesem Browser gespeichert.', errSync: 'Synchronisierung fehlgeschlagen. Lade die Seite neu.',
+      signIn: 'Anmelden', account: 'Konto', close: 'Schließen', signInTitle: 'Anmelden',
+      signInWhy: 'Melde dich an, damit deine Trainings im Konto gespeichert und auf allen Geräten verfügbar sind.', google: 'Weiter mit Google', or: 'oder',
+      email: 'E-Mail', password: 'Passwort', signInBtn: 'Anmelden', signUpBtn: 'Konto erstellen', forgot: 'Passwort vergessen?',
+      resetSent: 'Wir haben eine E-Mail zum Zurücksetzen des Passworts an {email} gesendet.', needEmail: 'Gib deine E-Mail ein.', signedInAs: 'Angemeldet als {email}.', signOut: 'Abmelden',
+      errCreds: 'E-Mail oder Passwort ist falsch.', errExists: 'Ein Konto mit dieser E-Mail gibt es bereits. Tippe auf "Anmelden".',
+      errWeak: 'Das Passwort muss mindestens 6 Zeichen haben.', errEmail: 'Prüfe die E-Mail-Adresse.',
+      errNetwork: 'Keine Verbindung zum Server. Prüfe das Internet und versuche es erneut.', errMany: 'Zu viele Versuche. Versuche es in ein paar Minuten erneut.',
+      errGeneric: 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', privacy: 'Konto und Trainings werden in Google Firebase gespeichert.',
+    },
+    fr: {
+      myWorkouts: 'Mes entraînements', wkEmpty: 'Enregistrez la liste de tours actuelle pour la rouvrir ensuite d’un seul geste.', wkNamePh: 'Nom, par ex. Jambes',
+      save: 'Enregistrer', update: 'Mettre à jour', saved: 'Enregistré', deleteQ: 'Supprimer ?', deleteWk: 'Supprimer l’entraînement {name}',
+      wkLocal: 'Stockés dans ce navigateur. Connectez-vous pour les retrouver sur tous vos appareils.', wkCloud: 'Stockés dans le compte {email} et disponibles sur tous vos appareils.',
+      wkDevice: 'Stockés dans ce navigateur.', errSync: 'Échec de la synchronisation. Rechargez la page.',
+      signIn: 'Se connecter', account: 'Compte', close: 'Fermer', signInTitle: 'Connexion',
+      signInWhy: 'Connectez-vous pour garder vos entraînements dans votre compte et sur tous vos appareils.', google: 'Continuer avec Google', or: 'ou',
+      email: 'E-mail', password: 'Mot de passe', signInBtn: 'Se connecter', signUpBtn: 'Créer un compte', forgot: 'Mot de passe oublié ?',
+      resetSent: 'Un e-mail de réinitialisation a été envoyé à {email}.', needEmail: 'Saisissez votre e-mail.', signedInAs: 'Connecté en tant que {email}.', signOut: 'Se déconnecter',
+      errCreds: 'E-mail ou mot de passe incorrect.', errExists: 'Un compte existe déjà avec cet e-mail. Touchez "Se connecter".',
+      errWeak: 'Le mot de passe doit contenir au moins 6 caractères.', errEmail: 'Vérifiez l’adresse e-mail.',
+      errNetwork: 'Pas de connexion au serveur. Vérifiez internet et réessayez.', errMany: 'Trop de tentatives. Réessayez dans quelques minutes.',
+      errGeneric: 'Une erreur s’est produite. Réessayez.', privacy: 'Votre compte et vos entraînements sont stockés dans Google Firebase.',
+    },
+    pt: {
+      myWorkouts: 'Meus treinos', wkEmpty: 'Salve a lista de rodadas atual para abri-la depois com um toque.', wkNamePh: 'Nome, ex.: Pernas',
+      save: 'Salvar', update: 'Atualizar', saved: 'Salvo', deleteQ: 'Excluir?', deleteWk: 'Excluir treino {name}',
+      wkLocal: 'Salvos neste navegador. Entre para tê-los em todos os seus dispositivos.', wkCloud: 'Salvos na conta {email} e disponíveis em todos os seus dispositivos.',
+      wkDevice: 'Salvos neste navegador.', errSync: 'Falha na sincronização. Recarregue a página.',
+      signIn: 'Entrar', account: 'Conta', close: 'Fechar', signInTitle: 'Entrar',
+      signInWhy: 'Entre para guardar seus treinos na conta e tê-los em todos os seus dispositivos.', google: 'Continuar com o Google', or: 'ou',
+      email: 'E-mail', password: 'Senha', signInBtn: 'Entrar', signUpBtn: 'Criar conta', forgot: 'Esqueceu a senha?',
+      resetSent: 'Enviamos um e-mail para redefinir a senha para {email}.', needEmail: 'Digite seu e-mail.', signedInAs: 'Conectado como {email}.', signOut: 'Sair',
+      errCreds: 'E-mail ou senha incorretos.', errExists: 'Já existe uma conta com este e-mail. Toque em "Entrar".',
+      errWeak: 'A senha deve ter pelo menos 6 caracteres.', errEmail: 'Verifique o endereço de e-mail.',
+      errNetwork: 'Sem conexão com o servidor. Verifique a internet e tente de novo.', errMany: 'Muitas tentativas. Tente novamente em alguns minutos.',
+      errGeneric: 'Algo deu errado. Tente novamente.', privacy: 'Sua conta e seus treinos ficam no Google Firebase.',
+    },
+    it: {
+      myWorkouts: 'I miei allenamenti', wkEmpty: 'Salva l’elenco di round attuale per riaprirlo poi con un tocco.', wkNamePh: 'Nome, es. Gambe',
+      save: 'Salva', update: 'Aggiorna', saved: 'Salvato', deleteQ: 'Eliminare?', deleteWk: 'Elimina allenamento {name}',
+      wkLocal: 'Salvati in questo browser. Accedi per averli su tutti i tuoi dispositivi.', wkCloud: 'Salvati nell’account {email} e disponibili su tutti i tuoi dispositivi.',
+      wkDevice: 'Salvati in questo browser.', errSync: 'Sincronizzazione non riuscita. Ricarica la pagina.',
+      signIn: 'Accedi', account: 'Account', close: 'Chiudi', signInTitle: 'Accedi',
+      signInWhy: 'Accedi per salvare gli allenamenti nel tuo account e averli su tutti i dispositivi.', google: 'Continua con Google', or: 'oppure',
+      email: 'Email', password: 'Password', signInBtn: 'Accedi', signUpBtn: 'Crea account', forgot: 'Password dimenticata?',
+      resetSent: 'Abbiamo inviato un’email per reimpostare la password a {email}.', needEmail: 'Inserisci la tua email.', signedInAs: 'Accesso effettuato come {email}.', signOut: 'Esci',
+      errCreds: 'Email o password errate.', errExists: 'Esiste già un account con questa email. Tocca "Accedi".',
+      errWeak: 'La password deve avere almeno 6 caratteri.', errEmail: 'Controlla l’indirizzo email.',
+      errNetwork: 'Nessuna connessione al server. Controlla internet e riprova.', errMany: 'Troppi tentativi. Riprova tra qualche minuto.',
+      errGeneric: 'Qualcosa è andato storto. Riprova.', privacy: 'Account e allenamenti sono salvati su Google Firebase.',
+    },
+    tr: {
+      myWorkouts: 'Antrenmanlarım', wkEmpty: 'Mevcut tur listesini kaydedin, sonra tek dokunuşla açın.', wkNamePh: 'Ad, örn. Bacak',
+      save: 'Kaydet', update: 'Güncelle', saved: 'Kaydedildi', deleteQ: 'Silinsin mi?', deleteWk: '{name} antrenmanını sil',
+      wkLocal: 'Bu tarayıcıda saklanır. Tüm cihazlarınızda olması için giriş yapın.', wkCloud: '{email} hesabında saklanır, tüm cihazlarınızda görünür.',
+      wkDevice: 'Bu tarayıcıda saklanır.', errSync: 'Bulut eşitlemesi başarısız. Sayfayı yenileyin.',
+      signIn: 'Giriş yap', account: 'Hesap', close: 'Kapat', signInTitle: 'Giriş',
+      signInWhy: 'Antrenmanlarınızın hesabınızda saklanması ve tüm cihazlarınızda olması için giriş yapın.', google: 'Google ile devam et', or: 'veya',
+      email: 'E-posta', password: 'Şifre', signInBtn: 'Giriş yap', signUpBtn: 'Hesap oluştur', forgot: 'Şifrenizi mi unuttunuz?',
+      resetSent: 'Şifre sıfırlama e-postası {email} adresine gönderildi.', needEmail: 'E-posta adresinizi girin.', signedInAs: '{email} olarak giriş yapıldı.', signOut: 'Çıkış yap',
+      errCreds: 'E-posta veya şifre hatalı.', errExists: 'Bu e-postayla bir hesap zaten var. "Giriş yap"a dokunun.',
+      errWeak: 'Şifre en az 6 karakter olmalı.', errEmail: 'E-posta adresini kontrol edin.',
+      errNetwork: 'Sunucuya bağlanılamıyor. İnterneti kontrol edip tekrar deneyin.', errMany: 'Çok fazla deneme. Birkaç dakika sonra tekrar deneyin.',
+      errGeneric: 'Bir şeyler ters gitti. Tekrar deneyin.', privacy: 'Hesabınız ve antrenmanlarınız Google Firebase’de saklanır.',
+    },
+    zh: {
+      myWorkouts: '我的训练', wkEmpty: '保存当前的轮次列表，之后一键打开。', wkNamePh: '名称，例如：腿部',
+      save: '保存', update: '更新', saved: '已保存', deleteQ: '删除？', deleteWk: '删除训练 {name}',
+      wkLocal: '保存在此浏览器中。登录后可在所有设备上使用。', wkCloud: '保存在账号 {email} 中，所有设备均可使用。',
+      wkDevice: '保存在此浏览器中。', errSync: '云同步失败。请刷新页面。',
+      signIn: '登录', account: '账号', close: '关闭', signInTitle: '登录',
+      signInWhy: '登录后，训练将保存在账号中，并可在所有设备上使用。', google: '使用 Google 继续', or: '或',
+      email: '邮箱', password: '密码', signInBtn: '登录', signUpBtn: '创建账号', forgot: '忘记密码？',
+      resetSent: '重置密码的邮件已发送至 {email}。', needEmail: '请输入邮箱。', signedInAs: '已登录：{email}。', signOut: '退出登录',
+      errCreds: '邮箱或密码错误。', errExists: '该邮箱已注册。请点击"登录"。',
+      errWeak: '密码至少需要 6 个字符。', errEmail: '请检查邮箱地址。',
+      errNetwork: '无法连接服务器。请检查网络后重试。', errMany: '尝试次数过多。请几分钟后再试。',
+      errGeneric: '出错了，请重试。', privacy: '账号和训练数据存储在 Google Firebase 中。',
+    },
+    ja: {
+      myWorkouts: 'マイトレーニング', wkEmpty: '今のラウンド一覧を保存すると、あとでワンタップで開けます。', wkNamePh: '名前（例：脚）',
+      save: '保存', update: '更新', saved: '保存しました', deleteQ: '削除しますか？', deleteWk: 'トレーニング {name} を削除',
+      wkLocal: 'このブラウザに保存されます。ログインすると、すべてのデバイスで使えます。', wkCloud: 'アカウント {email} に保存され、すべてのデバイスで使えます。',
+      wkDevice: 'このブラウザに保存されます。', errSync: 'クラウドとの同期に失敗しました。ページを再読み込みしてください。',
+      signIn: 'ログイン', account: 'アカウント', close: '閉じる', signInTitle: 'ログイン',
+      signInWhy: 'ログインすると、トレーニングがアカウントに保存され、すべてのデバイスで使えます。', google: 'Google で続行', or: 'または',
+      email: 'メールアドレス', password: 'パスワード', signInBtn: 'ログイン', signUpBtn: 'アカウントを作成', forgot: 'パスワードをお忘れですか？',
+      resetSent: 'パスワード再設定のメールを {email} に送信しました。', needEmail: 'メールアドレスを入力してください。', signedInAs: '{email} でログイン中です。', signOut: 'ログアウト',
+      errCreds: 'メールアドレスまたはパスワードが違います。', errExists: 'このメールアドレスのアカウントは既にあります。"ログイン"を押してください。',
+      errWeak: 'パスワードは6文字以上にしてください。', errEmail: 'メールアドレスを確認してください。',
+      errNetwork: 'サーバーに接続できません。インターネット接続を確認して、もう一度お試しください。', errMany: '試行回数が多すぎます。数分後にもう一度お試しください。',
+      errGeneric: 'うまくいきませんでした。もう一度お試しください。', privacy: 'アカウントとトレーニングは Google Firebase に保存されます。',
+    },
+  };
+  for (const code of Object.keys(I18N_CLOUD)) Object.assign(I18N[code], I18N_CLOUD[code]);
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   let lang = 'en', dict = I18N.en, plurals = null, chosenLang = null;
   function t(key, vars) {
@@ -588,7 +859,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   /* Настройки: список кругов + подготовка и заминка + язык; хранятся только в этом браузере */
   let S = PRESETS[0].v();
   const VOLUMES = [{ v: 1, key: 'soundLoud' }, { v: 0.35, key: 'soundQuiet' }, { v: 0, key: 'soundOff' }];
-  let volIdx = 0;
+  let volIdx = 0, activeId = null;
   function num(v, d, a, b) { return Number.isFinite(v) ? clamp(Math.round(v), a, b) : d; }
   function readState(o) {
     if (!o || !Array.isArray(o.list) || !o.list.length) return null;
@@ -621,6 +892,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     const raw = localStorage.getItem(KEY);
     if (raw) { o = JSON.parse(raw); st = readState(o); }
     if (o && typeof o.lang === 'string' && I18N[o.lang]) chosenLang = o.lang;
+    if (o && typeof o.active === 'string') activeId = o.active;
     if (!st) {
       const old = localStorage.getItem(OLD_KEY);
       if (old) { o = JSON.parse(old); st = readState(fromV1(o)); }
@@ -631,7 +903,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
   } catch (e) { /* без сохранения */ }
   function save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ volIdx, lang: chosenLang, prepare: S.prepare, cool: S.cool, list: S.list }));
+      localStorage.setItem(KEY, JSON.stringify({ volIdx, lang: chosenLang, active: activeId, prepare: S.prepare, cool: S.cool, list: S.list }));
     } catch (e) { /* ничего */ }
   }
 
@@ -1055,7 +1327,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'preset' + (p.wide ? ' wide' : '');
     b.innerHTML = '<b></b><span></span>';
-    b.addEventListener('click', () => { S = p.v(); listDirty = true; save(); settingsChanged(); });
+    b.addEventListener('click', () => { S = p.v(); activeId = null; wkName.value = ''; listDirty = true; save(); settingsChanged(); renderWorkouts(); });
     p.el = b; p.sig = sigOf(p.v());
     presetsEl.appendChild(b);
   }
@@ -1107,7 +1379,7 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
 
   function isTyping(el) { return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT'); }
   window.addEventListener('keydown', (e) => {
-    if (e.code !== 'Space' || isTyping(e.target)) return;
+    if (e.code !== 'Space' || isTyping(e.target) || authDlg.open) return;
     e.preventDefault();
     if (e.repeat) return;
     state === 'running' ? pause() : start();
@@ -1138,6 +1410,184 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 
+  /* Мои тренировки: без входа хранятся в этом браузере, после входа в облаке (cloud.js, Firebase) */
+  const WKEY = 'tabata-workouts-v1';
+  const wkList = $('#wkList'), wkEmpty = $('#wkEmpty'), wkSync = $('#wkSync');
+  const wkForm = $('#wkSave'), wkName = $('#wkName'), wkSaveBtn = $('#wkSaveBtn');
+  const acctBtn = $('#acctBtn'), authDlg = $('#authDlg'), authMsg = $('#authMsg');
+  const authEmail = $('#authEmail'), authPass = $('#authPass');
+  let WK = [], user = null, cloudMod = null, syncErr = false, flashTimer = 0;
+  function normWk(o) {
+    const st = readState(o);
+    if (!st || typeof o.id !== 'string' || !o.id || typeof o.name !== 'string' || !o.name.trim()) return null;
+    return { id: o.id.slice(0, 40), name: o.name.trim().slice(0, 60), prepare: st.prepare, cool: st.cool, list: st.list, updatedAt: Number(o.updatedAt) || 0 };
+  }
+  function readLocalWk() {
+    try {
+      const a = JSON.parse(localStorage.getItem(WKEY) || '[]');
+      return Array.isArray(a) ? a.map(normWk).filter(Boolean) : [];
+    } catch (e) { return []; }
+  }
+  function writeLocalWk(list) { try { localStorage.setItem(WKEY, JSON.stringify(list)); } catch (e) { /* ничего */ } }
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const inCloud = () => !!(user && cloudMod);
+  function cloudFail() { syncErr = true; renderWorkouts(); }
+  function activeWk() { return WK.find((w) => w.id === activeId) || null; }
+  function renderSaveLabel() {
+    if (flashTimer) return;
+    const a = activeWk();
+    wkSaveBtn.textContent = a && wkName.value.trim() === a.name ? t('update') : t('save');
+  }
+  function renderWorkouts() {
+    const items = WK.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    wkList.textContent = '';
+    for (const w of items) {
+      const row = document.createElement('div');
+      row.className = 'wk-row' + (w.id === activeId ? ' active' : '');
+      const open = document.createElement('button');
+      open.type = 'button'; open.className = 'wk-open';
+      const name = document.createElement('b'); name.textContent = w.name;
+      const meta = document.createElement('span');
+      meta.textContent = t('total', { t: mmss(totalOf(buildPlan(w))), rounds: roundsText(w.list.length) });
+      open.append(name, meta);
+      open.addEventListener('click', () => loadWorkout(w.id));
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'wk-del'; del.textContent = '×';
+      del.setAttribute('aria-label', t('deleteWk', { name: w.name }));
+      del.addEventListener('click', () => askDelete(del, w.id));
+      row.append(open, del);
+      wkList.appendChild(row);
+    }
+    wkEmpty.hidden = items.length > 0;
+    wkSync.classList.toggle('err', syncErr);
+    wkSync.textContent = syncErr ? t('errSync')
+      : !cloudMod ? t('wkDevice') : user ? t('wkCloud', { email: user.email || user.name }) : t('wkLocal');
+    renderSaveLabel();
+  }
+  function loadWorkout(id) {
+    const w = WK.find((x) => x.id === id);
+    if (!w) return;
+    S = snap(w); activeId = id; wkName.value = w.name;
+    listDirty = true; save(); settingsChanged(); renderWorkouts();
+  }
+  wkForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = wkName.value.trim().slice(0, 60);
+    if (!name) { wkName.focus(); return; }
+    const a = activeWk();
+    const w = { id: a && a.name === name ? a.id : newId(), name, prepare: S.prepare, cool: S.cool, list: snap(S).list, updatedAt: Date.now() };
+    WK = WK.filter((x) => x.id !== w.id).concat([w]);
+    activeId = w.id; save();
+    if (inCloud()) cloudMod.saveWorkout(w).catch(cloudFail);
+    else writeLocalWk(WK);
+    wkName.value = name;
+    renderWorkouts();
+    wkSaveBtn.textContent = t('saved');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { flashTimer = 0; renderSaveLabel(); }, 1500);
+  });
+  wkName.addEventListener('input', renderSaveLabel);
+  function askDelete(btn, id) {
+    if (btn.dataset.confirm === '1') { deleteWorkout(id); return; }
+    btn.dataset.confirm = '1'; btn.textContent = t('deleteQ'); btn.classList.add('confirm');
+    setTimeout(() => { btn.dataset.confirm = ''; btn.textContent = '×'; btn.classList.remove('confirm'); }, 4000);
+  }
+  function deleteWorkout(id) {
+    WK = WK.filter((w) => w.id !== id);
+    if (activeId === id) { activeId = null; wkName.value = ''; save(); }
+    if (inCloud()) cloudMod.removeWorkout(id).catch(cloudFail);
+    else writeLocalWk(WK);
+    renderWorkouts();
+  }
+
+  /* Вход */
+  const AUTH_ERR = {
+    'auth/invalid-credential': 'errCreds', 'auth/invalid-login-credentials': 'errCreds', 'auth/wrong-password': 'errCreds',
+    'auth/user-not-found': 'errCreds', 'auth/email-already-in-use': 'errExists', 'auth/weak-password': 'errWeak',
+    'auth/invalid-email': 'errEmail', 'auth/missing-email': 'needEmail', 'auth/network-request-failed': 'errNetwork',
+    'auth/too-many-requests': 'errMany',
+  };
+  function authError(e) {
+    const code = e && e.code ? String(e.code) : '';
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+    authMsg.textContent = t(AUTH_ERR[code] || 'errGeneric');
+  }
+  function setBusy(b) { authDlg.classList.toggle('busy', b); }
+  function renderAccount() {
+    acctBtn.hidden = !cloudMod;
+    if (!cloudMod) return;
+    acctBtn.textContent = user ? (user.name || user.email || t('account')) : t('signIn');
+    acctBtn.classList.toggle('in', !!user);
+    $('#authOut').hidden = !!user;
+    $('#authIn').hidden = !user;
+    if (user) $('#authWho').textContent = t('signedInAs', { email: user.email || user.name });
+  }
+  function handleUser(u) {
+    user = u; syncErr = false;
+    if (u) {
+      const local = readLocalWk();
+      WK = local;
+      if (local.length) cloudMod.importWorkouts(local).then(() => writeLocalWk([])).catch(cloudFail);
+      if (authDlg.open) authDlg.close();
+    } else {
+      WK = readLocalWk();
+    }
+    renderAccount(); renderWorkouts();
+  }
+  function handleCloudWorkouts(list) {
+    if (!user) return;
+    WK = list.map(normWk).filter(Boolean);
+    syncErr = false;
+    renderWorkouts();
+  }
+  acctBtn.addEventListener('click', () => {
+    authMsg.textContent = '';
+    try { authDlg.showModal(); } catch (e) { authDlg.setAttribute('open', ''); }
+  });
+  $('#authClose').addEventListener('click', () => authDlg.close());
+  $('#googleBtn').addEventListener('click', async () => {
+    authMsg.textContent = '';
+    const redirect = standalone || window.matchMedia('(pointer: coarse)').matches;
+    try { await cloudMod.signInGoogle(redirect); } catch (e) {
+      if (e && e.code === 'auth/popup-blocked') { cloudMod.signInGoogle(true).catch(authError); return; }
+      authError(e);
+    }
+  });
+  async function doEmail(create) {
+    authMsg.textContent = '';
+    const email = authEmail.value.trim(), pass = authPass.value;
+    if (!email) { authMsg.textContent = t('needEmail'); authEmail.focus(); return; }
+    if (pass.length < 6) { authMsg.textContent = t('errWeak'); authPass.focus(); return; }
+    setBusy(true);
+    try {
+      await (create ? cloudMod.signUpEmail(email, pass) : cloudMod.signInEmail(email, pass));
+      authPass.value = '';
+    } catch (e) { authError(e); } finally { setBusy(false); }
+  }
+  $('#emailForm').addEventListener('submit', (e) => { e.preventDefault(); doEmail(false); });
+  $('#emailUp').addEventListener('click', () => doEmail(true));
+  $('#forgotBtn').addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    if (!email) { authMsg.textContent = t('needEmail'); authEmail.focus(); return; }
+    setBusy(true);
+    try { await cloudMod.resetPassword(email); authMsg.textContent = t('resetSent', { email }); }
+    catch (e) { authError(e); } finally { setBusy(false); }
+  });
+  $('#signOutBtn').addEventListener('click', async () => {
+    try { await cloudMod.signOut(); authDlg.close(); } catch (e) { authError(e); }
+  });
+  async function startCloud() {
+    if (!hasManifest) return;
+    let m = null;
+    try { m = await import('./cloud.js'); } catch (e) { return; }
+    if (!m.enabled) return;
+    cloudMod = m;
+    try { await m.start({ onUser: handleUser, onWorkouts: handleCloudWorkouts, onError: cloudFail, lang }); }
+    catch (e) { cloudMod = null; }
+    renderAccount(); renderWorkouts();
+  }
+  WK = readLocalWk();
+
   /* Язык */
   const langSel = $('#langSel');
   for (const [code, name] of LANGS) {
@@ -1155,14 +1605,17 @@ button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
     if (am) am.setAttribute('content', t('appName'));
     document.querySelectorAll('[data-i]').forEach((el) => { el.textContent = t(el.dataset.i); });
     document.querySelectorAll('[data-i-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.iAria)); });
+    document.querySelectorAll('[data-i-ph]').forEach((el) => { el.setAttribute('placeholder', t(el.dataset.iPh)); });
     langSel.value = lang;
-    renderFieldLabels(); renderPresetTexts(); renderSound(); renderFs();
+    renderFieldLabels(); renderPresetTexts(); renderSound(); renderFs(); renderWorkouts(); renderAccount();
+    if (cloudMod && cloudMod.setLanguage) cloudMod.setLanguage(lang);
     listDirty = true;
     settingsChanged();
   }
   langSel.addEventListener('change', () => { chosenLang = langSel.value; applyLang(chosenLang); save(); });
 
   applyLang(chosenLang || detectLang());
+  startCloud();
 })();
 </script>
 </body>
