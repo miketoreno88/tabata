@@ -1105,14 +1105,9 @@ body:not(.live) #soundBtnLive { display: none; }
     return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
   }
   /* Квадратная волна + октава выше на почти полной громкости: резкий сигнал, слышно поверх музыки */
-  function beep(freq, dur, when) {
-    const level = VOLUMES[volIdx].v;
-    if (!level) return;
-    const a = audio(); if (!a) return;
-    const tt = a.currentTime + (when || 0);
-    const peak = 0.9 * level;
+  function tone(a, dest, freq, dur, tt, peak) {
     const g = a.createGain();
-    g.connect(a.destination);
+    g.connect(dest);
     g.gain.setValueAtTime(0, tt);
     g.gain.linearRampToValueAtTime(peak, tt + 0.005);
     g.gain.setValueAtTime(peak, tt + dur - 0.03);
@@ -1123,11 +1118,70 @@ body:not(.live) #soundBtnLive { display: none; }
       o.connect(og); og.connect(g); o.start(tt); o.stop(tt + dur + 0.02);
     });
   }
-  function phaseSound(type) {
-    if (type === 'work') { beep(1400, 0.7); }
-    else if (type === 'rest') { beep(700, 0.22); beep(700, 0.22, 0.32); }
-    else if (type === 'prep') { beep(1000, 0.2); }
-    else if (type === 'cool') { beep(600, 0.8); }
+  /* Один сигнал сразу: проба громкости */
+  function beep(freq, dur) {
+    const level = VOLUMES[volIdx].v;
+    if (!level) return;
+    const a = audio(); if (!a) return;
+    tone(a, a.destination, freq, dur, a.currentTime, 0.9 * level);
+  }
+  /* Сигналы тренировки: [частота, длительность, сдвиг] */
+  const SOUNDS = {
+    work: [[1400, 0.7, 0]],
+    rest: [[700, 0.22, 0], [700, 0.22, 0.32]],
+    prep: [[1000, 0.2, 0]],
+    cool: [[600, 0.8, 0]],
+    count: [[1000, 0.16, 0]],
+    finish: [[1400, 0.2, 0], [1400, 0.2, 0.3], [1900, 0.8, 0.6]],
+  };
+  /* Сигналы идут по часам звуковой карты и ставятся заранее, на 5 минут вперёд. Если включать их по тику страницы,
+     в фоновой вкладке они опаздывают и пропадают: Chrome будит её таймеры раз в секунду, а через 5 минут раз в минуту.
+     Все сигналы одной расстановки идут через общий узел (bus): отключил его, и они смолкли (пауза, пропуск, сброс) */
+  const AHEAD_MS = 5 * 60 * 1000;
+  let sched = null; // { bus, offset: часы звука минус часы страницы (с), to: до какого момента расставлено (мс) }
+  const phaseStart = () => endAt - plan[idx].dur * 1000;
+  function soundEvents(from, to) {
+    const out = [];
+    let s = phaseStart();
+    for (let i = idx; i < plan.length && s < to; i++) {
+      const d = plan[i].dur * 1000;
+      out.push([s, plan[i].type]);
+      if (plan[i].dur > 3) out.push([s + d - 3000, 'count'], [s + d - 2000, 'count'], [s + d - 1000, 'count']);
+      s += d;
+      if (i === plan.length - 1) out.push([s, 'finish']);
+    }
+    return out.filter(([t]) => t >= from && t < to);
+  }
+  function fillSounds(to) {
+    if (!sched || !ac) return;
+    for (const [t, kind] of soundEvents(sched.to, to)) {
+      const at = Math.max(ac.currentTime, t / 1000 + sched.offset);
+      for (const [f, dur, off] of SOUNDS[kind]) tone(ac, sched.bus, f, dur, at + off, 0.9);
+    }
+    sched.to = to;
+  }
+  function cancelSounds() {
+    if (!sched) return;
+    try { sched.bus.disconnect(); } catch (e) { /* ничего */ }
+    sched = null;
+  }
+  /* Расставить заново сигналы с момента from (мс по часам страницы) */
+  function scheduleSounds(from) {
+    cancelSounds();
+    const a = audio();
+    if (!a || state !== 'running') return;
+    const bus = a.createGain();
+    bus.gain.value = VOLUMES[volIdx].v;
+    bus.connect(a.destination);
+    sched = { bus, offset: a.currentTime - performance.now() / 1000, to: from };
+    fillSounds(performance.now() + AHEAD_MS);
+  }
+  /* На каждом тике: часы звука разошлись с часами страницы (звук стоял, например экран iPhone был заблокирован) -
+     расставить заново с текущего момента; иначе дописать сигналы вперёд */
+  function keepSounds(now) {
+    if (!sched || !ac) return;
+    if (Math.abs(ac.currentTime - now / 1000 - sched.offset) > 0.25) scheduleSounds(now);
+    else if (sched.to - now < AHEAD_MS / 2) fillSounds(now + AHEAD_MS);
   }
 
   /* Не гасить экран */
@@ -1151,15 +1205,29 @@ body:not(.live) #soundBtnLive { display: none; }
   let R = snap(S);
   let plan = buildPlan(S), idx = -1, endAt = 0, remainMs = 0, lastWhole = null, timerId = null;
 
-  function enter(i) {
+  /* Этап i начинается в момент at (мс по часам страницы) */
+  function enter(i, at) {
     idx = i;
     remainMs = plan[i].dur * 1000;
-    endAt = performance.now() + remainMs;
+    endAt = at + remainMs;
     lastWhole = plan[i].dur;
-    phaseSound(plan[i].type);
   }
-  function startTicker() { if (!timerId) timerId = setInterval(tick, 100); }
-  function stopTicker() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  /* Тик: таймер страницы плюс такой же из воркера. Таймеры фоновой вкладки браузер будит раз в секунду, а Chrome через
+     5 минут раз в минуту, и время в заголовке вкладки вставало. Воркер так не тормозят; не запустился - хватит таймера */
+  let tickWorker;
+  function workerTicks(ms) {
+    if (tickWorker === undefined) {
+      tickWorker = null;
+      try {
+        const src = 'let id = 0; onmessage = (e) => { clearInterval(id); id = e.data ? setInterval(() => postMessage(0), e.data) : 0; };';
+        tickWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        tickWorker.onmessage = tick;
+      } catch (e) { tickWorker = null; }
+    }
+    if (tickWorker) tickWorker.postMessage(ms);
+  }
+  function startTicker() { if (!timerId) { timerId = setInterval(tick, 100); workerTicks(250); } }
+  function stopTicker() { if (timerId) { clearInterval(timerId); timerId = null; workerTicks(0); } }
 
   function start() {
     audio();
@@ -1169,29 +1237,34 @@ body:not(.live) #soundBtnLive { display: none; }
       buildTimeline(plan);
       if (!plan.length) return;
       state = 'running';
-      enter(0);
+      enter(0, performance.now());
+      scheduleSounds(phaseStart());
     } else if (state === 'paused') {
       endAt = performance.now() + remainMs;
       state = 'running';
+      scheduleSounds(performance.now());
     }
     requestWake(); startTicker(); render();
   }
   function pause() {
     remainMs = Math.max(0, endAt - performance.now());
-    state = 'paused'; stopTicker(); releaseWake(); render();
+    state = 'paused'; cancelSounds(); stopTicker(); releaseWake(); render();
   }
+  /* Финальный сигнал уже стоит в очереди звука, здесь не звучит */
   function finish() {
     state = 'done'; idx = plan.length; remainMs = 0; stopTicker(); releaseWake();
-    beep(1400, 0.2, 0); beep(1400, 0.2, 0.3); beep(1900, 0.8, 0.6);
     render();
   }
   function reset() {
-    state = 'idle'; idx = -1; stopTicker(); releaseWake();
+    state = 'idle'; idx = -1; cancelSounds(); stopTicker(); releaseWake();
     plan = buildPlan(S); buildTimeline(plan); render();
   }
+  /* Пропуск без сигнала: следующие сигналы расставляются от нового этапа */
   function skip() {
+    cancelSounds();
     if (idx + 1 >= plan.length) { finish(); return; }
-    enter(idx + 1);
+    enter(idx + 1, performance.now());
+    if (state === 'running') scheduleSounds(phaseStart() + 1);
     render();
   }
   function tick() {
@@ -1200,17 +1273,15 @@ body:not(.live) #soundBtnLive { display: none; }
     let left = endAt - now;
     while (left <= 0) {
       if (idx + 1 >= plan.length) { finish(); return; }
-      const over = -left;
-      enter(idx + 1);
-      endAt -= over;
+      enter(idx + 1, endAt);
       left = endAt - now;
     }
+    keepSounds(now);
     remainMs = left;
     const whole = Math.ceil(left / 1000);
     if (whole !== lastWhole) {
       lastWhole = whole;
       if (whole >= 1 && whole <= 3 && plan[idx].dur > 3) {
-        beep(1000, 0.16);
         clock.classList.remove('beat'); void clock.offsetWidth; clock.classList.add('beat');
       }
     }
@@ -1297,6 +1368,9 @@ body:not(.live) #soundBtnLive { display: none; }
       leftInfo.textContent = t('left', { t: mmss(Math.ceil(rest)) });
       startBtn.textContent = state === 'paused' ? t('resume') : t('pause');
     }
+    /* Во время тренировки время и этап видны и на вкладке: "0:42 · Работа" */
+    const title = live ? (state === 'paused' ? '⏸ ' : '') + mmss(Math.ceil(remainMs / 1000)) + ' · ' + phase(plan[idx].type) : t('title');
+    if (document.title !== title) document.title = title;
     updateTimeline();
   }
 
@@ -1558,7 +1632,9 @@ body:not(.live) #soundBtnLive { display: none; }
   }
   soundBtns.forEach((b) => b.addEventListener('click', () => {
     volIdx = (volIdx + 1) % VOLUMES.length;
-    save(); renderSound(); beep(1000, 0.16);
+    save(); renderSound();
+    if (sched) sched.bus.gain.value = VOLUMES[volIdx].v;
+    beep(1000, 0.16);
   }));
 
   const fsBtn = $('#fsBtn');
